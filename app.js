@@ -9,25 +9,25 @@ const helmet = require('helmet');
 const userRoute = require('./routes/userRoute')
 connectDB()
 
-// app.use(helmet({
-//   contentSecurityPolicy:false,
-//   crossOriginEmbedderPolicy: true,
-//   crossOriginOpenerPolicy: true,
-//   crossOriginResourcePolicy: { policy: "same-origin" },
-//   dnsPrefetchControl: { allow: false },
-//   expectCt: { maxAge: 86400 },
-//   frameguard: { action: 'deny' },
-//   hidePoweredBy: true,
-//   hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
-//   ieNoOpen: true,
-//   noSniff: true,
-//   originAgentCluster: true,
-//   permittedCrossDomainPolicies: { policy: "none" },
-//   referrerPolicy: { policy: "no-referrer" },
-//   xssFilter: true
-// }));
+app.use(helmet({
+  contentSecurityPolicy:false,
+  crossOriginEmbedderPolicy: true,
+  crossOriginOpenerPolicy: true,
+  crossOriginResourcePolicy: { policy: "same-origin" },
+  dnsPrefetchControl: { allow: false },
+  expectCt: { maxAge: 86400 },
+  frameguard: { action: 'deny' },
+  hidePoweredBy: true,
+  hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+  ieNoOpen: true,
+  noSniff: true,
+  originAgentCluster: true,
+  permittedCrossDomainPolicies: { policy: "none" },
+  referrerPolicy: { policy: "no-referrer" },
+  xssFilter: true
+}));
 
-// app.set('trust proxy', 1);
+app.set('trust proxy', 1);
 
 const allowedOrigins = ["http://localhost:5173"];
 

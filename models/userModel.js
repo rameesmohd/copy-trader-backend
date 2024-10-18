@@ -1,5 +1,9 @@
 const mongoose = require("mongoose");
 
+const twoDecimalPlaces = (value) => {
+  return parseFloat(value).toFixed(2);
+};
+
 const userSchema = new mongoose.Schema({
   email: {
     type: String,
@@ -55,18 +59,21 @@ const userSchema = new mongoose.Schema({
     type : Array,
     default : []
   },
-  main_wallet: {
-    locked : {
-        type : Number,
-        default : 0
-    },
-    unlocked : {
-        type : Number,
-        default : 0
+  my_wallets: {
+    main_wallet: {
+      type : Number,
+      default : 0.00,
+      set: twoDecimalPlaces
     },
     earned_profit : {
-        type : Number,
-        default : 0
+      type : Number,
+      default : 0.00,
+      set: twoDecimalPlaces
+    },
+    rebate_wallet: {
+      type : Number,
+      default : 0.00,
+      set: twoDecimalPlaces
     }
   },
 });
