@@ -7,6 +7,7 @@ const connectDB = require('./config/mongoose')
 const app = express();
 const helmet = require('helmet');
 const userRoute = require('./routes/userRoute')
+const masterRoute = require('./routes/masterRoute')
 connectDB()
 
 app.use(helmet({
@@ -51,6 +52,7 @@ app.use(express.json())
 app.use(express.urlencoded({extended: true}))
 
 app.use('/',userRoute)
+app.use('/master',masterRoute)
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
