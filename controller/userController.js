@@ -1,7 +1,12 @@
 const {validateLogin,validateRegister} = require('./validations/validations');
-const userModel = require('../models/userModel')
+const userModel = require('../models/user')
+const managerModel = require('../models/manager');
 const bcrypt = require("bcrypt")
 const jwt = require("jsonwebtoken");
+const investmentModel = require('../models/investment');
+const userTransactionModel = require('../models/userTransaction')
+const investmentTransactionModel = require('../models/investmentTransaction');
+
 
 const fetchUser =()=>{
 
@@ -80,9 +85,139 @@ const login =async(req,res)=>{
 }
 
 
+const fetchManager =async(req,res)=>{
+    try {
+        const {id} = req.query
+        console.log(req.query);
+        
+        const manager =  await managerModel.findOne({_id : id },{password : 0})
+        console.log("manager : ", manager);
+        return res.status(200).json({result : manager})
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ errMsg: 'Server error!', error: error.message });
+    }
+}
+
+const makeDeposit =async(req,res)=>{
+    try {
+        const {userId,managerId,amount,referralCode} = req.body
+        console.log(req.query);
+        const user = await userModel.findById(userId);
+        const manager = await managerModel.findById(managerId);
+
+        if (amount > user.my_wallets.main_wallet) {
+            return res.status(400).json({errMsg : 'Insufficient balance. Please deposit more funds.'});
+        }
+        if (amount < manager.min_initial_investment) {
+            return res.status(400).json({errMsg : `Minimum investment is ${manager.min_initial_investment} USD.`});
+        }
+
+        // Deduct amount from user's main wallet
+        user.my_wallets.main_wallet -= amount;
+
+        // Create a new investment record
+        const newInvestment = new investmentModel({
+            user: user._id,
+            manager: manager._id,
+            total_funds : amount,
+            trading_interval : manager.trading_inverval,
+            investment_duration : manager?.investment_locking_duration,
+        });
+        
+        await newInvestment.save();
+        user.my_investments.push(newInvestment._id);
+
+        manager.my_investments.push(newInvestment._id);
+        manager.total_funds +=amount
+
+        await user.save();
+        await manager.save();
+
+        // Create the User Withdrawal Transaction (Main Wallet)
+        const userTransaction = new userTransactionModel({
+            user: user._id,
+            investment: newInvestment._id,
+            type: 'transfer',
+            amount,
+            description: `Transferred to investment with manager ${manager.nickname}.`,
+        });
+        await userTransaction.save();
+
+        const investmentTransaction = new investmentTransactionModel({
+            user: user._id,
+            investment: newInvestment._id,
+            type: 'deposit',
+            amount,
+            description: `Added to manager ${manager.nickname}'s portfolio.`,
+          });
+        await investmentTransaction.save();
+        
+        // Return the new investment document _id
+        return res.status(201).json({
+            result: newInvestment,
+            investmentId: newInvestment._id, // Include _id in response
+            msg: "Investment created successfully!",
+        });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ errMsg: 'Server error!', error: error.message });
+    }
+}
+
+
+const fetchMyInvestments =async(req,res)=>{
+    try {
+        const { id } = req.query
+        const investments = await investmentModel
+        .find({user : id})
+        .populate({
+            path: 'manager',      
+            select: ['nickname','trading_interval'] 
+        });
+
+        if(!investments){
+            return res.status(200).json({msg:"No investments yet!"})
+        }
+
+        return res.status(200).json({result : investments})
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ errMsg: 'Server error!', error: error.message });
+    }
+}
+
+
+const fetchInvestment =async(req,res)=>{
+    try {
+        const { id } = req.query
+        console.log(id);
+        
+        const investment = await investmentModel.findById(id)
+        .populate({
+            path: 'manager',      
+            select: ['nickname','trading_interval'] 
+        });
+        
+        if(!investment){
+            return res.status(200).json({msg:"No investments yet!"})
+        }
+
+        console.log('investment :',investment);
+        
+        return res.status(200).json({result : investment})
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ errMsg: 'Server error!', error: error.message });
+    }
+}
 
 module.exports = {
     fetchUser,
     registerUser,
-    login
+    login,
+    fetchManager,
+    makeDeposit,
+    fetchMyInvestments,
+    fetchInvestment
 }

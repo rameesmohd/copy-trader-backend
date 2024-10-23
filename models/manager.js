@@ -1,14 +1,20 @@
 const mongoose = require("mongoose");
+const { Schema } = mongoose;
+
 
 const twoDecimalPlaces = (value) => {
   return parseFloat(value).toFixed(2);
 };
 
-const providerSchema = new mongoose.Schema({
+const managerSchema = new mongoose.Schema({
   username: {
     type: String,
     unique: true,
     required: true,
+  },
+  user_id : {
+    type : String,
+    unique : true
   },
   password: {
     type: String,
@@ -36,7 +42,7 @@ const providerSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
-  trading_inverval : {
+  trading_interval : {
     type: String,
     enum : ["weekly","daily","monthly"],
     required: true,
@@ -94,7 +100,7 @@ const providerSchema = new mongoose.Schema({
     type : Number,
     required: true
   },
-  return :{
+  total_return :{
     type : Number,
     required: true,
   },
@@ -117,6 +123,16 @@ const providerSchema = new mongoose.Schema({
   max_drawdown : {
     type : Number,
     required : true
+  },
+  my_investments: [
+    { 
+      type: Schema.Types.ObjectId,
+       ref: 'Investment' 
+    }
+  ],
+  investment_locking_duration : {
+    type : Number,
+    default : 30
   },
   trade_history: [
     {
@@ -154,9 +170,14 @@ const providerSchema = new mongoose.Schema({
       }
     }
   ],
-});
+  createdAt: { type: Date, default: Date.now, index: true },
+  },
+  {
+    timestamps: true,
+  }
+  );
 
 // Create the model
-const providerModel = mongoose.model("strategy_providers", providerSchema);
+const managerModel = mongoose.model("managers", managerSchema);
 
-module.exports = providerModel;
+module.exports = managerModel;

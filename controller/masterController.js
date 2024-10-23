@@ -1,5 +1,5 @@
-const userModel = require('../models/userModel')
-const providerModel = require('../models/providerModel')
+const userModel = require('../models/user')
+const managerModel = require('../models/manager')
 
 const fetchUser =async(req,res)=>{
     try {
@@ -36,7 +36,7 @@ const addProvider=async(req,res)=>{
         //     total_investors: '4',
         //     win_rate: '4'
         //   }
-        const newProvider =  new providerModel(req.body)  
+        const newProvider =  new managerModel(req.body)  
         await newProvider.save()  
         res.status(201).json({ msg: 'Provider added successfully' });
     } catch (error) {
@@ -47,7 +47,7 @@ const addProvider=async(req,res)=>{
 
 const fetchProviders=async(req,res)=>{
     try {
-        const providers =  await providerModel.find({})
+        const providers =  await managerModel.find({})
         return res.status(200).json({result : providers})
     } catch (error) {
         console.log(error);
@@ -58,7 +58,7 @@ const fetchProviders=async(req,res)=>{
 const updateProvider = async (req, res) => {
     try {
       const { _id, ...updates } = req.body; // Extract ID and fields to update
-      const provider = await providerModel.findOneAndUpdate(
+      const provider = await managerModel.findOneAndUpdate(
         { _id }, 
         { $set: updates },  
         { new: true }       

@@ -1,4 +1,6 @@
 const mongoose = require("mongoose");
+const { Schema } = mongoose;
+
 
 const twoDecimalPlaces = (value) => {
   return parseFloat(value).toFixed(2);
@@ -13,6 +15,10 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: true,
+  },
+  user_id : {
+    type : String,
+    unique : true
   },
   first_name: {
     type: String,
@@ -55,10 +61,11 @@ const userSchema = new mongoose.Schema({
   residential_proof: {
     type: String,
   },
-  my_investments :{
-    type : Array,
-    default : []
-  },
+  my_investments :[ 
+    { type: Schema.Types.ObjectId, 
+      ref:'investments' 
+    } 
+  ],
   my_wallets: {
     main_wallet: {
       type : Number,
@@ -74,9 +81,18 @@ const userSchema = new mongoose.Schema({
       type : Number,
       default : 0.00,
       set: twoDecimalPlaces
-    }
+    },
   },
-});
+  createdAt: { 
+    type: Date, 
+    default: Date.now, 
+    index: true 
+  },
+  },
+  {
+    timestamps: true,
+  }
+);
 
 // Create the model
 const userModel = mongoose.model("users", userSchema);
