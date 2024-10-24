@@ -99,73 +99,251 @@ const fetchManager =async(req,res)=>{
     }
 }
 
-const makeDeposit =async(req,res)=>{
-    try {
-        const {userId,managerId,amount,referralCode} = req.body
-        console.log(req.query);
-        const user = await userModel.findById(userId);
-        const manager = await managerModel.findById(managerId);
+// const makeDeposit =async(req,res)=>{
+//     try {
+//         const {userId,managerId,amount,referralCode} = req.body
+//         console.log(req.query);
+//         const user = await userModel.findById(userId);
+//         const manager = await managerModel.findById(managerId);
 
-        if (amount > user.my_wallets.main_wallet) {
-            return res.status(400).json({errMsg : 'Insufficient balance. Please deposit more funds.'});
-        }
-        if (amount < manager.min_initial_investment) {
-            return res.status(400).json({errMsg : `Minimum investment is ${manager.min_initial_investment} USD.`});
-        }
+//         if (amount > user.my_wallets.main_wallet) {
+//             return res.status(400).json({errMsg : 'Insufficient balance. Please deposit more funds.'});
+//         }
+//         if (amount < manager.min_initial_investment) {
+//             return res.status(400).json({errMsg : `Minimum investment is ${manager.min_initial_investment} USD.`});
+//         }
 
-        // Deduct amount from user's main wallet
-        user.my_wallets.main_wallet -= amount;
+//         // Deduct amount from user's main wallet
+//         user.my_wallets.main_wallet -= amount;
 
-        // Create a new investment record
-        const newInvestment = new investmentModel({
-            user: user._id,
-            manager: manager._id,
-            total_funds : amount,
-            trading_interval : manager.trading_inverval,
-            investment_duration : manager?.investment_locking_duration,
-        });
+//         // Create a new investment record
+//         const newInvestment = new investmentModel({
+//             user: user._id,
+//             manager: manager._id,
+//             manager_nickname : manager.nickname,
+//             total_funds : amount,
+//             trading_interval : manager.trading_interval,
+//             min_initial_investment : manager.min_initial_investment,
+//             min_top_up: manager.min_top_up,
+//             trading_liquidity_period : manager.trading_liquidity_period,
+//             total_deposit : amount,
+//             manager_performance_fee: manager.performance_fees_percentage,
+//         });
         
-        await newInvestment.save();
-        user.my_investments.push(newInvestment._id);
+//         await newInvestment.save();
+//         user.my_investments.push(newInvestment._id);
 
-        manager.my_investments.push(newInvestment._id);
-        manager.total_funds +=amount
+//         manager.my_investments.push(newInvestment._id);
+//         manager.total_funds +=amount
 
+//         await user.save();
+//         await manager.save();
+
+//         // Create the User Withdrawal Transaction (Main Wallet)
+//         const userTransaction = new userTransactionModel({
+//             user: user._id,
+//             investment: newInvestment._id,
+//             type: 'transfer',
+//             amount,
+//             description: `Transferred to investment with manager ${manager.nickname}.`,
+//         });
+//         await userTransaction.save();
+
+//         const investmentTransaction = new investmentTransactionModel({
+//             user: user._id,
+//             investment: newInvestment._id,
+//             type: 'deposit',
+//             amount,
+//             description: `Added to manager ${manager.nickname}'s portfolio.`,
+//           });
+//         await investmentTransaction.save();
+        
+//         // Return the new investment document _id
+//         return res.status(201).json({
+//             result: newInvestment,
+//             investmentId: newInvestment._id, // Include _id in response
+//             msg: "Investment created successfully!",
+//         });
+//     } catch (error) {
+//         console.log(error);
+//         res.status(500).json({ errMsg: 'Server error!', error: error.message });
+//     }
+// }
+
+const makeDeposit = async (req, res) => {
+    try {
+      const { userId, managerId, amount, referralCode } = req.body;
+  
+      const user = await userModel.findById(userId);
+      const manager = await managerModel.findById(managerId);
+  
+      // Validate if user has enough balance
+      if (amount > user.my_wallets.main_wallet) {
+        return res
+          .status(400)
+          .json({ errMsg: 'Insufficient balance. Please deposit more funds.' });
+      }
+  
+      // Check if the deposit meets the manager's minimum initial investment
+      if (amount < manager.min_initial_investment) {
+        return res
+          .status(400)
+          .json({ errMsg: `Minimum investment is ${manager.min_initial_investment} USD.` });
+      }
+  
+      // Deduct the amount from user's wallet
+      user.my_wallets.main_wallet -= amount;
+  
+      // Create a new deposit object with lock duration
+      const deposit = {
+        amount,
+        lock_duration: manager.trading_liquidity_period, // 30 days lock period for example (can be customized)
+        deposited_at: new Date(),
+      };
+  
+       const investment = new investmentModel({
+          user: user._id,
+          manager: manager._id,
+          manager_nickname: manager.nickname,
+          total_funds: amount,
+          trading_interval: manager.trading_interval,
+          min_initial_investment: manager.min_initial_investment,
+          min_top_up: manager.min_top_up,
+          trading_liquidity_period: manager.trading_liquidity_period,
+          total_deposit: amount,
+          manager_performance_fee: manager.performance_fees_percentage,
+          min_withdrawal : manager.min_withdrawal,
+          deposits: [deposit], // Add the initial deposit
+        });
+  
+      await investment.save();
+  
+      // Update user's investment list
+      if (!user.my_investments.includes(investment._id)) {
+        user.my_investments.push(investment._id);
+      }
+  
+      // Update manager's total funds and investments
+      manager.my_investments.push(investment._id);
+      manager.total_funds += amount;
+      manager.total_investors += 1
+  
+      await user.save();
+      await manager.save();
+  
+      // Record a user transaction for the deposit
+      const userTransaction = new userTransactionModel({
+        user: user._id,
+        investment: investment._id,
+        type: 'transfer',
+        amount,
+        description: `Transferred to investment with manager ${manager.nickname}.`,
+      });
+      await userTransaction.save();
+  
+      // Record an investment transaction
+      const investmentTransaction = new investmentTransactionModel({
+        user: user._id,
+        investment: investment._id,
+        type: 'deposit',
+        amount,
+        description: `Added to manager ${manager.nickname}'s portfolio.`,
+      });
+      await investmentTransaction.save();
+  
+      // Return success response with investment ID
+      return res.status(201).json({
+        result: investment,
+        investmentId: investment._id,
+        msg: 'Investment created successfully!',
+      });
+  
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ errMsg: 'Server error!', error: error.message });
+    }
+  };
+
+const topUpInvestment =async(req,res)=>{
+    try {
+        const { userId, investmentId, amount, referralCode } = req.body;
+    
+        const user = await userModel.findById(userId);
+        const investment = await investmentModel.findById(investmentId);
+    
+        // Validate if user has enough balance
+        if (amount > user.my_wallets.main_wallet) {
+          return res
+            .status(400)
+            .json({ errMsg: 'Insufficient balance. Please deposit more funds.' });
+        }
+    
+        // Check if the deposit meets the manager's minimum initial investment
+        if (amount < investment.min_top_up) {
+          return res
+            .status(400)
+            .json({ errMsg: `Minimum investment is ${investment.min_top_up} USD.` });
+        }
+    
+        // Deduct the amount from user's wallet
+        user.my_wallets.main_wallet -= amount;
+        
+        // Create a new deposit object with lock duration
+        const deposit = {
+          amount,
+          lock_duration: investment.trading_liquidity_period, // 30 days lock period for example (can be customized)
+          deposited_at: new Date(),
+        };
+    
+        if (investment) {
+          // If investment exists, add the deposit to the existing investment
+          investment.deposits.push(deposit);
+          investment.total_funds += amount;
+          investment.total_deposit += amount;
+        }
+    
+        await investment.save();
+    
+        // Update manager's total funds 
+        const manager = await managerModel.findById(investment.manager);    
+        manager.total_funds += amount;
+        
         await user.save();
         await manager.save();
-
-        // Create the User Withdrawal Transaction (Main Wallet)
+    
+        // Record a user transaction for the deposit
         const userTransaction = new userTransactionModel({
-            user: user._id,
-            investment: newInvestment._id,
-            type: 'transfer',
-            amount,
-            description: `Transferred to investment with manager ${manager.nickname}.`,
+          user: user._id,
+          investment: investment._id,
+          type: 'transfer',
+          amount,
+          description: `Transferred to investment with manager ${manager.nickname}.`,
         });
         await userTransaction.save();
-
+    
+        // Record an investment transaction
         const investmentTransaction = new investmentTransactionModel({
-            user: user._id,
-            investment: newInvestment._id,
-            type: 'deposit',
-            amount,
-            description: `Added to manager ${manager.nickname}'s portfolio.`,
-          });
-        await investmentTransaction.save();
-        
-        // Return the new investment document _id
-        return res.status(201).json({
-            result: newInvestment,
-            investmentId: newInvestment._id, // Include _id in response
-            msg: "Investment created successfully!",
+          user: user._id,
+          investment: investment._id,
+          type: 'deposit',
+          amount,
+          description: `Added to manager ${manager.nickname}'s portfolio.`,
         });
-    } catch (error) {
+        await investmentTransaction.save();
+    
+        // Return success response with investment ID
+        return res.status(201).json({
+          result: investment,
+          investmentId: investment._id,
+          msg: 'Deposit added successfully!',
+        });
+    
+      } catch (error) {
         console.log(error);
         res.status(500).json({ errMsg: 'Server error!', error: error.message });
-    }
+      }
 }
-
-
+  
 const fetchMyInvestments =async(req,res)=>{
     try {
         const { id } = req.query
@@ -173,7 +351,13 @@ const fetchMyInvestments =async(req,res)=>{
         .find({user : id})
         .populate({
             path: 'manager',      
-            select: ['nickname','trading_interval'] 
+            select: [
+                'nickname',
+                'trading_interval',
+                'min_initial_investment',
+                'min_top_up',
+                'performance_fees_percentage',
+            ] 
         });
 
         if(!investments){

@@ -130,46 +130,46 @@ const managerSchema = new mongoose.Schema({
        ref: 'Investment' 
     }
   ],
-  investment_locking_duration : {
+  trading_liquidity_period : {
     type : Number,
     default : 30
   },
-  trade_history: [
-    {
-      open_price : {
-        type : Number
-      },
-      close_price : {
-        type : Number
-      },
-      close_time : {
-        type : Date,
-      },
-      is_distributed : {
-        type : Boolean
-      },
-      lot : {
-        type : Number
-      },
-      manager_profit : {
-        type : Number
-      },
-      swap : {
-        type : Number,
-        default : 0
-      },
-      symbol : {
-        type : String
-      },
-      trans_id : {
-        type : String
-      },
-      type : {
-        type : String,
-        enum : ['buy , sell']
-      }
-    }
-  ],
+  // trade_history: [
+  //   {
+  //     open_price : {
+  //       type : Number
+  //     },
+  //     close_price : {
+  //       type : Number
+  //     },
+  //     close_time : {
+  //       type : Date,
+  //     },
+  //     is_distributed : {
+  //       type : Boolean
+  //     },
+  //     lot : {
+  //       type : Number
+  //     },
+  //     manager_profit : {
+  //       type : Number
+  //     },
+  //     swap : {
+  //       type : Number,
+  //       default : 0
+  //     },
+  //     symbol : {
+  //       type : String
+  //     },
+  //     trans_id : {
+  //       type : String
+  //     },
+  //     type : {
+  //       type : String,
+  //       enum : ['buy , sell']
+  //     }
+  //   }
+  // ],
   createdAt: { type: Date, default: Date.now, index: true },
   },
   {
