@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
-
 const twoDecimalPlaces = (value) => {
   return parseFloat(value).toFixed(2);
 };
@@ -14,7 +13,8 @@ const managerSchema = new mongoose.Schema({
   },
   user_id : {
     type : String,
-    unique : true
+    unique : true,
+    required : true
   },
   password: {
     type: String,

@@ -1,12 +1,17 @@
 const express = require('express')
 const router = express.Router();
-const { fetchUser,
-        registerUser, 
-        login ,
-        fetchManager ,
-        makeDeposit, 
-        fetchMyInvestments,
-        fetchInvestment }=require('../controller/userController')
+const { 
+    fetchUser,
+    registerUser, 
+    login ,
+    fetchManager }=require('../controller/userController')
+const {
+    makeDeposit, 
+    fetchMyInvestments,
+    fetchInvestment,
+    fetchTransactions,
+    topUpInvestment,
+    handleInvestmentWithdrawal }=require('../controller/investmentController')
 
 router.route('/register')
     .get(fetchUser)
@@ -20,10 +25,15 @@ router.route('/my-investments')
 
 router.route('/investment')
     .get(fetchInvestment)
+    .post(topUpInvestment)
+    .patch(handleInvestmentWithdrawal)
 
 router.route('/manager')
     .get(fetchManager)
     .post(makeDeposit)
+
+router.route('/transactions')
+    .get(fetchTransactions)
 
 module.exports=router
 

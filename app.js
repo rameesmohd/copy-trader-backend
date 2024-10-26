@@ -8,6 +8,8 @@ const app = express();
 const helmet = require('helmet');
 const userRoute = require('./routes/userRoute')
 const masterRoute = require('./routes/masterRoute')
+const managerRoute = require('./routes/managerRoute')
+
 connectDB()
 
 app.use(helmet({
@@ -53,6 +55,8 @@ app.use(express.urlencoded({extended: true}))
 
 app.use('/',userRoute)
 app.use('/master',masterRoute)
+app.use('/manager',managerRoute)
+
 
 app.use((err, req, res, next) => {
   console.error(err.stack);

@@ -1,0 +1,53 @@
+const tradeSchema = new Schema(
+    {
+      manager: { 
+        type: Schema.Types.ObjectId, 
+        ref: 'manager', 
+        required: true },
+      manager_trade :  { 
+        type: Schema.Types.ObjectId, 
+        ref: 'manager_trades', 
+        required: true },
+      symbol : { 
+        type: String, 
+        required: true },
+      manager_volume : {
+        type :String ,
+        required : true},
+      open_price: { 
+        type: String, 
+        required: true }, 
+      close_price: { 
+        type: String, 
+        required: true }, 
+      swap : {
+        type : String, 
+        default : 0},
+      open_time: { 
+        type: String, 
+        required: true }, 
+      close_time: { 
+        type: String, 
+        required: true }, 
+      manager_profit: { 
+        type: Number, 
+        required: true }, 
+      txid: { 
+        type: String, 
+        default: () => Math.random().toString(36).substring(2, 10).toUpperCase() 
+      },
+      investor_profit : { 
+        type: Number, 
+        required: true }, 
+      createdAt: { 
+        type: Date, 
+        default: Date.now, 
+        index: true },
+    },
+    {
+      timestamps: true, // Automatically manages createdAt and updatedAt fields
+    }
+  );
+  
+  const Trade = mongoose.model('investor_trades', tradeSchema);
+  

@@ -4,27 +4,55 @@ const { Schema } = mongoose;
 const transactionSchema = new Schema({
     user: { 
         type: Schema.Types.ObjectId, 
-        ref: 'users' 
-    },
-    investment: { 
+        ref: 'users', 
+        index: true 
+      },
+      investment: { 
         type: Schema.Types.ObjectId, 
-        ref: 'investments' 
-    },
-    type: {
-      type: String,
-      enum: ['deposit', 'withdrawal', 'profit'],
-      required: true,
-    },
-    amount: { 
+        ref: 'investments', 
+        index: true 
+      },
+      type: {
+        type: String,
+        enum: ['deposit', 'withdrawal','transfer', 'profit' ,'manager_fee'],
+        required: true,
+        index: true 
+      },
+      status: { 
+        type: String, 
+        enum: ['pending', 'approved', 'rejected','success','confirmed'], 
+        default: 'pending' 
+      },
+      amount: { 
         type: Number, 
         required: true 
-    },
-    description: String,
-    createdAt: { 
+      },
+      deduction : {
+        type : Number,
+        default : 0
+      },
+      is_deducted : {
+        type : Boolean,
+        default : false
+      },
+      comment: {
+        type : String,
+        required : false
+      },
+      transaction_id: { 
+        type: String, 
+        unique: true, 
+        default: () => Math.random().toString(36).substring(2, 10).toUpperCase() 
+      },
+      related_transaction: { 
+        type: Schema.Types.ObjectId, 
+        ref: 'user_transactions' 
+      },
+      createdAt: { 
         type: Date, 
         default: Date.now, 
         index: true 
-    },
+      },
     },
     {
         timestamps: true,
