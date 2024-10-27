@@ -14,7 +14,7 @@ const managerSchema = new mongoose.Schema({
   user_id : {
     type : String,
     unique : true,
-    required : true
+    default: () => Math.random(6)
   },
   password: {
     type: String,
@@ -134,42 +134,10 @@ const managerSchema = new mongoose.Schema({
     type : Number,
     default : 30
   },
-  // trade_history: [
-  //   {
-  //     open_price : {
-  //       type : Number
-  //     },
-  //     close_price : {
-  //       type : Number
-  //     },
-  //     close_time : {
-  //       type : Date,
-  //     },
-  //     is_distributed : {
-  //       type : Boolean
-  //     },
-  //     lot : {
-  //       type : Number
-  //     },
-  //     manager_profit : {
-  //       type : Number
-  //     },
-  //     swap : {
-  //       type : Number,
-  //       default : 0
-  //     },
-  //     symbol : {
-  //       type : String
-  //     },
-  //     trans_id : {
-  //       type : String
-  //     },
-  //     type : {
-  //       type : String,
-  //       enum : ['buy , sell']
-  //     }
-  //   }
-  // ],
+  total_performance_fee_collected: {
+    type: Number,
+    default : 0
+  },
   createdAt: { type: Date, default: Date.now, index: true },
   },
   {

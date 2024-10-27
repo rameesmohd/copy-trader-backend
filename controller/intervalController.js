@@ -1,0 +1,62 @@
+const managerModel = require('../models/manager');
+const investmentModel = require('../models/investment');
+const investmentTransactionModel = require('../models/investmentTransaction');
+
+const intervalInvestmentHandle = async (req, res) => {
+    try {
+        // Fetch all managers
+        const managers = await managerModel.find({trading_interval:'weekly'});
+
+        // Process each manager
+        for (const manager of managers) {
+            // Fetch all investments for the manager
+            const investments = await investmentModel.find({ manager: manager._id });
+
+            for (const investment of investments) {
+                // Calculate the amount to be added to total funds
+                const netIntervalProfit = investment.current_interval_profit_equity - investment.performance_fee_projected;
+
+                // Update investment's total funds and net profit
+                investment.total_funds += netIntervalProfit;
+                investment.net_profit += netIntervalProfit;
+
+                // Update manager's performance fee and investment's fee tracking
+                manager.total_performance_fee_collected += investment.performance_fee_projected;
+                investment.performance_fee_paid += investment.performance_fee_projected;
+
+                // Reset performance fee projections and profits
+                investment.performance_fee_projected = 0;
+                investment.current_interval_profit_equity = 0;
+                investment.current_interval_profit = 0;
+
+                // Create a performance fee deduction transaction
+                const feeTransaction = new investmentTransactionModel({
+                    user: investment.user,
+                    investment: investment._id,
+                    type: 'manager_fee',
+                    status: 'success',
+                    amount: investment.performance_fee_paid, // Use correct value
+                    comment: `Performance fee of ${investment.performance_fee_paid} deducted`,
+                });
+
+                // Save investment and fee transaction
+                await investment.save();
+                await feeTransaction.save();
+
+                console.log(`Handled current interval profit of ${netIntervalProfit} for investment ${investment._id}`);
+            }
+
+            // Save the manager with updated performance fee
+            await manager.save();
+        }
+
+        res.status(200).json({ message: 'Interval investment handling completed successfully' });
+    } catch (error) {
+        console.error('Error in interval investment handling:', error);
+        res.status(500).json({ errMsg: 'Server side error', error: error.message });
+    }
+};
+
+module.exports = {
+    intervalInvestmentHandle,
+};

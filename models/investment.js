@@ -46,20 +46,21 @@ const investmentSchema = new mongoose.Schema(
 
     deposits: [DepositSchema], 
 
-    total_funds: { type: Number, required: true }, // Total active funds
+    total_trade_profit: { type: Number, default: 0 }, //including all profit without cutting of performance fee
     open_trade_profit: { type: Number, default: 0.0 },
     closed_trade_profit: { type: Number, default: 0.0 },
-    current_interval_profit: { type: Number, default: 0.0 },
-    current_interval_profit_equity: { type: Number, default: 0.0 },
+
+    total_funds: { type: Number, required: true }, // Total active funds ( locked and unlocked deposits and profit after performaance fee, In frontend it shows by adding current_interval_profit_equity )
+    current_interval_profit: { type: Number, default: 0.0 }, //profit not for deduction of performance fee or withdraw
+    current_interval_profit_equity: { type: Number, default: 0.0 }, // real profit equity for deduction of performance fee and withdraw
 
     total_deposit: { type: Number, default: 0.0 }, // Sum of all deposits
     total_withdrawal: { type: Number, default: 0 },
      
-    net_profit: { type: Number, default: 0.0 }, //after performance fee
-    total_trade_profit: { type: Number, default: 0 }, //including all profit
+    net_profit: { type: Number, default: 0.0 }, //after performance fee(in frontend it showws as current_interval_profit + profit after perfromance deducted till last interval)
 
     performance_fee_paid: { type: Number, default: 0 },
-    performance_fee_projected: { type: Number, default: 0 },
+    performance_fee_projected: { type: Number, default: 0 },//current interval performance fee pending
   },
   { timestamps: true }
 );

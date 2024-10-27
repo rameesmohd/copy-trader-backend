@@ -1,3 +1,6 @@
+const mongoose = require("mongoose");
+const { Schema } = mongoose;
+
 const tradeSchema = new Schema(
     {
       manager: { 
@@ -39,15 +42,12 @@ const tradeSchema = new Schema(
       investor_profit : { 
         type: Number, 
         required: true }, 
-      createdAt: { 
-        type: Date, 
-        default: Date.now, 
-        index: true },
     },
     {
       timestamps: true, // Automatically manages createdAt and updatedAt fields
     }
   );
   
-  const Trade = mongoose.model('investor_trades', tradeSchema);
-  
+const investorTradeModel = mongoose.model('investor_trades', tradeSchema);
+
+module.exports = investorTradeModel;
