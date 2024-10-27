@@ -62,11 +62,6 @@ const userSchema = new mongoose.Schema({
   residential_proof: {
     type: String,
   },
-  my_investments :[ 
-    { type: Schema.Types.ObjectId, 
-      ref:'investments' 
-    } 
-  ],
   my_wallets: {
     main_wallet: {
       type : Number,

@@ -5,8 +5,18 @@ const bcrypt = require("bcrypt")
 const jwt = require("jsonwebtoken");
 
 
-const fetchUser =()=>{
-
+const fetchUser =async(req,res)=>{
+    try {
+        const {_id}=req.query
+        const user = await userModel.findOne({_id})
+        if(!user){
+            return res.status(400).json({errMsg:'User not found!'})
+        }
+        return res.status(200).json({result :user })
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ errMsg: 'Error registering user', error: error.message });
+    }
 }
 
 const registerUser =async(req,res)=>{
@@ -86,7 +96,7 @@ const fetchManager =async(req,res)=>{
         const {id} = req.query
         console.log(req.query);
         
-        const manager =  await managerModel.findOne({_id : id },{password : 0})
+        const manager =  await managerModel.findOne({user_id : id },{password : 0})
         console.log("manager : ", manager);
         return res.status(200).json({result : manager})
     } catch (error) {

@@ -14,7 +14,11 @@ const managerSchema = new mongoose.Schema({
   user_id : {
     type : String,
     unique : true,
-    default: () => Math.random(6)
+    default: () => Math.floor(100000 + Math.random() * 900000).toString()
+  },
+  img_url:{
+    type : String,
+    default : 'https://api.dicebear.com/7.x/miniavs/svg?seed=8'
   },
   password: {
     type: String,
@@ -124,12 +128,6 @@ const managerSchema = new mongoose.Schema({
     type : Number,
     required : true
   },
-  my_investments: [
-    { 
-      type: Schema.Types.ObjectId,
-       ref: 'Investment' 
-    }
-  ],
   trading_liquidity_period : {
     type : Number,
     default : 30

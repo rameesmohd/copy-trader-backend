@@ -50,6 +50,7 @@ const makeDeposit = async (req, res) => {
         deposits: [], 
       });
       
+      await user.save();
       await investment.save();
       
       const userTransaction = new userTransactionModel({
@@ -72,15 +73,7 @@ const makeDeposit = async (req, res) => {
 
       await userTransaction.save()
       await investmentTransaction.save()
-
-      // Update user's investment list
-      if (!user.my_investments.includes(investment._id)) {
-        user.my_investments.push(investment._id);
-      }
-      // Update manager's total funds and investments
-      manager.my_investments.push(investment._id);
-  
-      await user.save();
+      
       await manager.save();
 
       await approveTransaction(investmentTransaction._id)

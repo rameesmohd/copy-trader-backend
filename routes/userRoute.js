@@ -14,11 +14,13 @@ const {
     handleInvestmentWithdrawal }=require('../controller/investmentController')
 
 router.route('/register')
-    .get(fetchUser)
     .post(registerUser)
 
 router.route('/login')
     .post(login)
+
+router.route('/user')
+    .get(fetchUser)
 
 router.route('/my-investments')
     .get(fetchMyInvestments)

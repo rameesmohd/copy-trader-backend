@@ -34,7 +34,7 @@ const addTradeToManager=async(req,res)=>{
         })
         
         await newTrade.save()
-        res.status(200).json({result : newTrade})
+        res.status(200).json({result : newTrade,msg:'Trade added successfully'})
     } catch (error) {
         console.log(error);
         res.status(500).json({errMsg : 'sever side error'})
