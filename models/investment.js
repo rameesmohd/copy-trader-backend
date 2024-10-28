@@ -36,7 +36,7 @@ const investmentSchema = new mongoose.Schema(
     user: { type: Schema.Types.ObjectId, ref: 'users' },
     manager: { type: Schema.Types.ObjectId, ref: 'managers' },
     manager_nickname: { type: String, required: true },
-    status: { type: String, enum: ['pending', 'active', 'rejected'], default: 'active' },
+    is_active: { type: Boolean, default : true },
     trading_interval: { type: String, enum: ['daily', 'weekly', 'monthly'] },
     min_initial_investment: { type: Number, required: true },
     min_top_up: { type: Number, required: true },

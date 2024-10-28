@@ -102,7 +102,8 @@ const rollOverTradeDistribution = async (req, res) => {
                 investment.current_interval_profit += investorProfit;
                 investment.current_interval_profit_equity += investorProfit;
                 investment.total_trade_profit += investorProfit;
-
+                investment.closed_trade_profit += investorProfit;
+                
                 // Calculate performance fee and update net profit
                 const performanceFee = (investorProfit * investment.manager_performance_fee) / 100;
                 investment.performance_fee_projected += performanceFee;
@@ -112,8 +113,10 @@ const rollOverTradeDistribution = async (req, res) => {
                 await trade.save(); // Save the trade update
                 
                 const investorTradeHistory = new investorTradeModel({
+                    investment : investment._id,
                     manager : manager._id,
                     manager_trade : trade._id,
+                    type : trade.type,
                     symbol : trade.symbol,
                     manager_volume : trade.manager_volume,
                     open_price : trade.open_price,

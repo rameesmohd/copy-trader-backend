@@ -3,6 +3,7 @@ const investmentTransactionModel = require('../models/investmentTransaction');
 const userTransactionModel = require('../models/userTransaction');
 const userModel = require('../models/user')
 const managerModel = require('../models/manager');
+const investmentTradesModel =require('../models/investorTrades')
 
 const makeDeposit = async (req, res) => {
     try {
@@ -267,18 +268,7 @@ const approveTopup=async(transactionId)=>{
 const fetchMyInvestments =async(req,res)=>{
     try {
         const { id } = req.query
-        const investments = await investmentModel
-        .find({user : id})
-        .populate({
-            path: 'manager',      
-            select: [
-                'nickname',
-                'trading_interval',
-                'min_initial_investment',
-                'min_top_up',
-                'performance_fees_percentage',
-            ] 
-        });
+        const investments = await investmentModel.find({user : id},{deposits:0})
 
         if(!investments){
             return res.status(200).json({msg:"No investments yet!"})
@@ -298,10 +288,6 @@ const fetchInvestment =async(req,res)=>{
         console.log(id);
         
         const investment = await investmentModel.findById(id)
-        .populate({
-            path: 'manager',      
-            select: ['nickname','trading_interval'] 
-        });
         
         if(!investment){
             return res.status(200).json({msg:"No investments yet!"})
@@ -528,6 +514,17 @@ const approveInvestmentWithdrawal = async (withdrawTransactionId) => {
   }
 };
 
+const fetchInvestmentTrades=async(req,res)=>{
+  try {
+    const {_id} = req.query
+    const myInvestmetTrades =  await investmentTradesModel.find({investment:_id})
+    return res.status(200).json({result : myInvestmetTrades})
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ errMsg: 'Server error!', error: error.message });
+  }
+}
+
 module.exports = {
     makeDeposit,
     fetchMyInvestments,
@@ -535,5 +532,5 @@ module.exports = {
     fetchTransactions,
     topUpInvestment,
     handleInvestmentWithdrawal,
-    // approveInvestmentWithdrawal
+    fetchInvestmentTrades
 }

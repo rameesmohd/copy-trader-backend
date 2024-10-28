@@ -11,7 +11,10 @@ const {
     fetchInvestment,
     fetchTransactions,
     topUpInvestment,
-    handleInvestmentWithdrawal }=require('../controller/investmentController')
+    handleInvestmentWithdrawal,
+    fetchInvestmentTrades }=require('../controller/investmentController')
+
+const {fetchOrderHistory} = require('../controller/managerController')
 
 router.route('/register')
     .post(registerUser)
@@ -21,6 +24,7 @@ router.route('/login')
 
 router.route('/user')
     .get(fetchUser)
+
 
 router.route('/my-investments')
     .get(fetchMyInvestments)
@@ -34,8 +38,13 @@ router.route('/manager')
     .get(fetchManager)
     .post(makeDeposit)
 
+router.get('/manager-orders',fetchOrderHistory)    
+
 router.route('/transactions')
     .get(fetchTransactions)
+
+router.route('/trades')
+    .get(fetchInvestmentTrades)
 
 module.exports=router
 

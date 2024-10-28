@@ -7,10 +7,20 @@ const tradeSchema = new Schema(
         type: Schema.Types.ObjectId, 
         ref: 'manager', 
         required: true },
+      investment : {
+        type: Schema.Types.ObjectId, 
+        ref: 'investments', 
+        required: true 
+      },
       manager_trade :  { 
         type: Schema.Types.ObjectId, 
         ref: 'manager_trades', 
         required: true },
+      type :{
+        type :String,
+        enum:['buy','sell'],
+        required : true
+      },
       symbol : { 
         type: String, 
         required: true },
