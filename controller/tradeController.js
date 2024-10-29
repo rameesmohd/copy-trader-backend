@@ -56,17 +56,46 @@ const getTrades=async(req,res)=>{
             is_distributed: distributed === 'true', // Convert query parameter to boolean
         });
 
-        // // If no trades found, send a 404 response
-        // if (tradeData.length === 0) {
-        //     return res.status(404).json({ errMsg: 'No trades found' });
-        // }
-
         res.status(200).json({result : tradeData})
     } catch (error) {
         console.log(error);
         res.status(500).json({errMsg : 'sever side error'})
     }
 }
+
+
+const getDailyGrowthData = async (managerId) => {
+    const dailyGrowth = await managerTradeModel.aggregate([
+      {
+        $match: { manager: managerId }, // Filter trades by the manager's ID
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$open_time" }, // Group by day
+          },
+          totalProfit: { $sum: "$manager_profit" }, // Sum profit for each day
+        },
+      },
+      {
+        $sort: { _id: 1 }, // Sort by date (ascending)
+      },
+      {
+        $project: {
+          date: "$_id", // Rename _id to date
+          value: { $round: ["$totalProfit", 2] }, // Round profit to 2 decimals
+          _id: 0,
+        },
+      },
+    ]);
+  
+    return dailyGrowth.map((data) => ({
+      date: new Date(data.date).getTime(), // Convert date to timestamp for charting
+      value: data.value,
+    }));
+  };
+
+  
 
 const rollOverTradeDistribution = async (req, res) => {
     try {
@@ -131,11 +160,34 @@ const rollOverTradeDistribution = async (req, res) => {
                 await investment.save(); // Save each investment update
             }
             
+            const trades = await managerTradeModel.aggregate([
+                {
+                  $match: { manager: manager._id },
+                },
+                {
+                  $group: {
+                    _id: '$symbol',
+                    totalProfit: { $sum: '$manager_profit' },
+                    tradeCount: { $sum: 1 },
+                  },
+                },
+                {
+                  $project: {
+                    _id: 0,
+                    label: '$_id', // Rename _id to label
+                    value: { $round: ['$totalProfit', 2] }, // Round to 2 decimals
+                    tradeCount: 1,
+                  },
+                },
+              ]);
+              
+            console.log("trades chart growth data : ",getDailyGrowthData(manager._id));
+            console.log('trades symbol perc : ',trades);
+            
             // Save manager updates
             await manager.save();
         }
-
-        res.status(200).json({ msg: 'Profit distributed successfully' });
+        return res.status(200).json({ msg: 'Profit distributed successfully' });
     } catch (error) {
         console.error('Error in distribution:', error);
         res.status(500).json({ errMsg: 'Server side error', error: error.message });

@@ -31,6 +31,10 @@ const DepositSchema = new Schema({
   },
 });
 
+const truncateToTwoDecimals = (num) => {
+  return Math.floor(num * 100) / 100;
+};
+
 const investmentSchema = new mongoose.Schema(
   {
     user: { type: Schema.Types.ObjectId, ref: 'users' },
@@ -46,21 +50,21 @@ const investmentSchema = new mongoose.Schema(
 
     deposits: [DepositSchema], 
 
-    total_trade_profit: { type: Number, default: 0 }, //including all profit without cutting of performance fee
-    open_trade_profit: { type: Number, default: 0.0 },
-    closed_trade_profit: { type: Number, default: 0.0 },
+    total_trade_profit: { type: Number, default: 0,set: truncateToTwoDecimals }, //including all profit without cutting of performance fee
+    open_trade_profit: { type: Number, default: 0.0,set: truncateToTwoDecimals },
+    closed_trade_profit: { type: Number, default: 0.0 ,set: truncateToTwoDecimals},
 
-    total_funds: { type: Number, required: true }, // Total active funds ( locked and unlocked deposits and profit after performaance fee, In frontend it shows by adding current_interval_profit_equity )
-    current_interval_profit: { type: Number, default: 0.0 }, //profit not for deduction of performance fee or withdraw
-    current_interval_profit_equity: { type: Number, default: 0.0 }, // real profit equity for deduction of performance fee and withdraw
+    total_funds: { type: Number, required: true ,set: truncateToTwoDecimals}, // Total active funds ( locked and unlocked deposits and profit after performaance fee, In frontend it shows by adding current_interval_profit_equity )
+    current_interval_profit: { type: Number, default: 0.0 ,set: truncateToTwoDecimals}, //profit not for deduction of performance fee or withdraw
+    current_interval_profit_equity: { type: Number, default: 0.0 ,set: truncateToTwoDecimals}, // real profit equity for deduction of performance fee and withdraw
 
-    total_deposit: { type: Number, default: 0.0 }, // Sum of all deposits
-    total_withdrawal: { type: Number, default: 0 },
+    total_deposit: { type: Number, default: 0.0 ,set: truncateToTwoDecimals}, // Sum of all deposits
+    total_withdrawal: { type: Number, default: 0 ,set: truncateToTwoDecimals},
      
-    net_profit: { type: Number, default: 0.0 }, //after performance fee(in frontend it showws as current_interval_profit + profit after perfromance deducted till last interval)
+    net_profit: { type: Number, default: 0.0 ,set: truncateToTwoDecimals}, //after performance fee(in frontend it showws as current_interval_profit + profit after perfromance deducted till last interval)
 
-    performance_fee_paid: { type: Number, default: 0 },
-    performance_fee_projected: { type: Number, default: 0 },//current interval performance fee pending
+    performance_fee_paid: { type: Number, default: 0 ,set: truncateToTwoDecimals},
+    performance_fee_projected: { type: Number, default: 0 ,set: truncateToTwoDecimals},//current interval performance fee pending
   },
   { timestamps: true }
 );

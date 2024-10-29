@@ -105,11 +105,19 @@ const fetchManager =async(req,res)=>{
     }
 }
 
-
+const fetchUserTransactions =async(req,res)=>{
+    try {
+        
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ errMsg: 'Server error!', error: error.message });
+    }
+}
 
 module.exports = {
     fetchUser,
     registerUser,
     login,
     fetchManager,
+    fetchUserTransactions
 }

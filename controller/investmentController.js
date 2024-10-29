@@ -140,7 +140,7 @@ const approveTransaction = async (transactionId) => {
     }
 };
   
-const fetchTransactions=async(req,res)=>{
+const fetchInvestmentTransactions=async(req,res)=>{
     try {
       const { id } = req.query
       const response = await investmentTransactionModel.find({investment : id})
@@ -529,7 +529,7 @@ module.exports = {
     makeDeposit,
     fetchMyInvestments,
     fetchInvestment,
-    fetchTransactions,
+    fetchInvestmentTransactions,
     topUpInvestment,
     handleInvestmentWithdrawal,
     fetchInvestmentTrades

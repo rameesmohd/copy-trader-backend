@@ -4,12 +4,14 @@ const {
     fetchUser,
     registerUser, 
     login ,
-    fetchManager }=require('../controller/userController')
+    fetchManager,
+    fetchUserTransactions
+ }=require('../controller/userController')
 const {
     makeDeposit, 
     fetchMyInvestments,
     fetchInvestment,
-    fetchTransactions,
+    fetchInvestmentTransactions,
     topUpInvestment,
     handleInvestmentWithdrawal,
     fetchInvestmentTrades }=require('../controller/investmentController')
@@ -40,9 +42,11 @@ router.route('/manager')
 
 router.get('/manager-orders',fetchOrderHistory)    
 
-router.route('/transactions')
-    .get(fetchTransactions)
+router.get('/transactions',fetchInvestmentTransactions)
 
+router.get('/transaction-history',fetchUserTransactions)
+
+)
 router.route('/trades')
     .get(fetchInvestmentTrades)
 
