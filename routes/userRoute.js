@@ -46,7 +46,6 @@ router.get('/transactions',fetchInvestmentTransactions)
 
 router.get('/transaction-history',fetchUserTransactions)
 
-)
 router.route('/trades')
     .get(fetchInvestmentTrades)
 
