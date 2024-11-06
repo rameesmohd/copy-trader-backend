@@ -5,8 +5,7 @@ const {
     registerUser, 
     login ,
     fetchManager,
-    fetchUserTransactions
- }=require('../controller/userController')
+    fetchUserTransactions }=require('../controller/userController')
 const {
     makeDeposit, 
     fetchMyInvestments,
@@ -16,7 +15,7 @@ const {
     handleInvestmentWithdrawal,
     fetchInvestmentTrades }=require('../controller/investmentController')
 
-const {fetchOrderHistory} = require('../controller/managerController')
+const { fetchOrderHistory } = require('../controller/managerController')
 
 router.route('/register')
     .post(registerUser)

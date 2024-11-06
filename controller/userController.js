@@ -3,6 +3,7 @@ const userModel = require('../models/user')
 const managerModel = require('../models/manager');
 const bcrypt = require("bcrypt")
 const jwt = require("jsonwebtoken");
+const userTransactionModel = require('../models/userTransaction');
 
 
 const fetchUser =async(req,res)=>{
@@ -105,14 +106,48 @@ const fetchManager =async(req,res)=>{
     }
 }
 
-const fetchUserTransactions =async(req,res)=>{
+const fetchUserTransactions = async (req, res) => {
     try {
+        const filters = req.query;
         
+        // Convert filter values to lowercase
+        const sanitizedFilters = {
+            ...filters,
+            status: filters.status?.toLowerCase(),
+            type: filters.type?.toLowerCase()
+        };
+
+        // Parse created_at_from and created_at_to with end-of-day adjustment for created_at_to
+        const createdAtFrom = sanitizedFilters.created_at_from ? new Date(sanitizedFilters.created_at_from) : null;
+        const createdAtTo = sanitizedFilters.created_at_to 
+            ? new Date(new Date(sanitizedFilters.created_at_to).setUTCHours(23, 59, 59, 999)) 
+            : null;
+
+        const pipeline = [
+            {
+                $match: {
+                    ...(createdAtFrom && createdAtTo && {
+                        createdAt: {
+                            $gte: createdAtFrom,
+                            $lte: createdAtTo
+                        }
+                    }),
+                    ...(sanitizedFilters.status !== 'null' && { status: sanitizedFilters.status }),
+                    ...(sanitizedFilters.type !== 'null' && { type: sanitizedFilters.type })
+                }
+            }
+        ];
+
+        console.log('Pipeline:', JSON.stringify(pipeline, null, 2));
+        
+        const data = await userTransactionModel.aggregate(pipeline);
+        return res.status(200).json({ result: data });
     } catch (error) {
-        console.log(error);
+        console.error(error);
         res.status(500).json({ errMsg: 'Server error!', error: error.message });
     }
-}
+};
+
 
 module.exports = {
     fetchUser,
