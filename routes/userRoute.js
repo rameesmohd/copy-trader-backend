@@ -48,5 +48,8 @@ router.get('/transaction-history',fetchUserTransactions)
 router.route('/trades')
     .get(fetchInvestmentTrades)
 
+router.route('/payment-usdtTrc')
+       .get() 
+
 module.exports=router
 
