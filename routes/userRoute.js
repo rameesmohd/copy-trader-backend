@@ -5,7 +5,8 @@ const {
     registerUser, 
     login ,
     fetchManager,
-    fetchUserTransactions }=require('../controller/userController')
+    fetchUserTransactions,
+    }=require('../controller/userController')
 const {
     makeDeposit, 
     fetchMyInvestments,
@@ -16,6 +17,8 @@ const {
     fetchInvestmentTrades }=require('../controller/investmentController')
 
 const { fetchOrderHistory } = require('../controller/managerController')
+const { createDeposit } = require('../controller/paymentController')
+
 
 router.route('/register')
     .post(registerUser)
@@ -48,8 +51,8 @@ router.get('/transaction-history',fetchUserTransactions)
 router.route('/trades')
     .get(fetchInvestmentTrades)
 
-router.route('/payment-usdtTrc')
-       .get() 
+router.route('/deposit_mainwallet')
+    .get(createDeposit) 
 
 module.exports=router
 

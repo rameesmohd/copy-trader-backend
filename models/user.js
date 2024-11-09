@@ -63,6 +63,10 @@ const userSchema = new mongoose.Schema({
     type: String,
   },
   my_wallets: {
+    main_wallet_id : {
+      type: String,
+      default: () => Math.random().toString(36).substring(2, 10).toUpperCase() 
+    },
     main_wallet: {
       type : Number,
       default : 0.00,
@@ -72,6 +76,10 @@ const userSchema = new mongoose.Schema({
       type : Number,
       default : 0.00,
       set: twoDecimalPlaces
+    },
+    rebate_wallet_id : {
+      type: String,
+      default: () => Math.random().toString(36).substring(2, 10).toUpperCase() 
     },
     rebate_wallet: {
       type : Number,

@@ -4,6 +4,7 @@ const managerModel = require('../models/manager');
 const bcrypt = require("bcrypt")
 const jwt = require("jsonwebtoken");
 const userTransactionModel = require('../models/userTransaction');
+const depositModel = require('../models/deposit')
 
 
 const fetchUser =async(req,res)=>{
@@ -148,11 +149,11 @@ const fetchUserTransactions = async (req, res) => {
     }
 };
 
-
 module.exports = {
     fetchUser,
     registerUser,
     login,
     fetchManager,
-    fetchUserTransactions
+    fetchUserTransactions,
+    // depositToMainWallet,
 }
