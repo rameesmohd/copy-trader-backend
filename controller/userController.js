@@ -54,7 +54,7 @@ const registerUser =async(req,res)=>{
             country_code:countryCode,
             mobile,
             password:hashpassword,
-            date_of_birth:dateOfBirth
+            date_of_birth:dateOfBirth,
         });
         await newUser.save();
         res.status(201).json({ msg: 'User registered successfully' });
@@ -81,7 +81,7 @@ const login =async(req,res)=>{
         const isMatch = await bcrypt.compare(password, userData.password);
         
         if(isMatch){
-            const token = jwt.sign({ _id:userData._id }, process.env.JWT_SECRET_KEY, { expiresIn: '24h' });
+            const token = jwt.sign({ _id:userData._id ,role : 'user'}, process.env.JWT_SECRET_KEY, { expiresIn: '7d' });
             const { password, ...userWithoutPassword } = userData;
            return res.status(200).json({result : userWithoutPassword,token})
         }

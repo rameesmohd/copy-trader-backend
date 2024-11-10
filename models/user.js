@@ -52,10 +52,6 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  join_date: {
-    type: Date,
-    default: Date.now, 
-  },
   identify_proof: {
     type: String,
   },

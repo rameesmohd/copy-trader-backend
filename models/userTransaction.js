@@ -18,6 +18,10 @@ const transactionSchema = new Schema({
       required: true,
       index: true 
     },
+    payment_mode : {
+      type : String,
+      enum : ['main wallet' ,'usdt','usdt trc20']
+    },
     status: { 
       type: String, 
       enum: ['pending', 'approved', 'rejected'], 
@@ -33,12 +37,16 @@ const transactionSchema = new Schema({
     },
     transaction_id: { 
       type: String, 
-      unique: true, 
       default: () => Math.random().toString(36).substring(2, 10).toUpperCase() 
     },
-    related_transaction: { 
-      type: Schema.Types.ObjectId, 
-      ref: 'investment_transactions' 
+    related_transaction: {
+      type: Schema.Types.ObjectId,
+      refPath: 'transaction_type' // This tells Mongoose to use the value in `transaction_type` to decide the ref
+    },
+    transaction_type: {
+      type: String,
+      enum: ['investment_transactions', 'deposits','withdrawals'],
+      required: true
     },
     createdAt: { 
       type: Date, 
