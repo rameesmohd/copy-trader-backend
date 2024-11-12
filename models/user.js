@@ -52,7 +52,7 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  kyc_Step : {
+  kyc_step : {
     type: Number,
     default: 0,
     min: 0,
@@ -63,12 +63,18 @@ const userSchema = new mongoose.Schema({
     },
   },
   identify_proof: {
-    type: String,
+    type: [String],  
     default: null,
-    validate: {
-      validator: (v) => !v || v.match(/\.(jpg|jpeg|png|pdf)$/i), // assumes a URL or filename with an extension
-      message: "Identity proof must be a valid image or PDF file",
-    },
+    validate: [
+      {
+        validator: (arr) => !arr || arr.every(url => /\.(jpg|jpeg|png|pdf)$/i.test(url)),
+        message: "Residential proof must be a valid image or PDF file",
+      },
+      {
+        validator: (arr) => !arr || arr.length <= 3,
+        message: "You can upload a maximum of 3 files for residential proof",
+      }
+    ],
   },
   identify_proof_status : {
     type: String,
@@ -76,12 +82,18 @@ const userSchema = new mongoose.Schema({
     default: "unavailable",
   },
   residential_proof: {
-    type: String,
+    type: [String],  
     default: null,
-    validate: {
-      validator: (v) => !v || v.match(/\.(jpg|jpeg|png|pdf)$/i),
-      message: "Residential proof must be a valid image or PDF file",
-    },
+    validate: [
+      {
+        validator: (arr) => !arr || arr.every(url => /\.(jpg|jpeg|png|pdf)$/i.test(url)),
+        message: "Residential proof must be a valid image or PDF file",
+      },
+      {
+        validator: (arr) => !arr || arr.length <= 3,
+        message: "You can upload a maximum of 3 files for residential proof",
+      }
+    ],
   },
   residential_proof_status : {
     type: String,

@@ -7,6 +7,8 @@ const {
     login ,
     fetchManager,
     fetchUserTransactions,
+    handleEmailVerificationOtp,
+    handleKycProofSubmit
 }=require('../controller/userController')
 const {
     makeDeposit, 
@@ -15,7 +17,8 @@ const {
     fetchInvestmentTransactions,
     topUpInvestment,
     handleInvestmentWithdrawal,
-    fetchInvestmentTrades 
+    fetchInvestmentTrades ,
+
 }=require('../controller/investmentController')
 
 const { fetchOrderHistory } = require('../controller/managerController')
@@ -65,6 +68,11 @@ router.get('/transaction-history',fetchUserTransactions)
 
 router.route('/trades')
     .get(fetchInvestmentTrades)
+
+//----------------------kyc----------------------------------------
+
+router.post('/kyc/otp',handleEmailVerificationOtp)
+router.post('/kyc',handleKycProofSubmit)
 
 //---------------------- wallet deposit & withdraws-------------------//
 

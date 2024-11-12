@@ -20,8 +20,10 @@ const registerSchema = Joi.object({
   countryCode: Joi.string().pattern(/^(\+\d{1,4})$/).required().messages({
     'string.pattern.base': 'Invalid country code format',
   }),
-  mobile: Joi.string().pattern(/^\d{10}$/).required().messages({
-    'string.pattern.base': 'Mobile number must be 10 digits',
+  mobile: Joi.string().min(7).max(15).required().messages({
+    'string.min': 'Mobile number must be at least 7 digits',
+    'string.max': 'Mobile number must be at most 15 digits',
+    'string.empty': 'Mobile number is required',
   }),
   dateOfBirth: Joi.date().iso().required().messages({
     'date.iso': 'Invalid date of birth format',
