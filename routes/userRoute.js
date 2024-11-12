@@ -21,6 +21,18 @@ const {
 const { fetchOrderHistory } = require('../controller/managerController')
 const { createDeposit,checkAndTransferPayment,withdrawFromMainWallet } = require('../controller/paymentController')
 
+const upload = require('../config/multer')
+
+router.post('/upload', upload.single('file'), (req, res) => {
+    if (!req.file) {
+      return res.status(400).send({ status: 'fail', message: 'No file uploaded' });
+    }
+    // The file URL from Cloudinary
+    const fileUrl = req.file.path;
+    
+    // Send the Cloudinary URL back to the client
+    res.send({ status: 'success', fileUrl: fileUrl });
+});
 
 router.route('/register')
     .post(registerUser)

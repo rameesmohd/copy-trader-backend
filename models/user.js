@@ -52,11 +52,41 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  kyc_Step : {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 3, // assuming there are three steps in the KYC process
+    validate: {
+      validator: Number.isInteger,
+      message: "{VALUE} is not an integer value for KYC step",
+    },
+  },
   identify_proof: {
     type: String,
+    default: null,
+    validate: {
+      validator: (v) => !v || v.match(/\.(jpg|jpeg|png|pdf)$/i), // assumes a URL or filename with an extension
+      message: "Identity proof must be a valid image or PDF file",
+    },
+  },
+  identify_proof_status : {
+    type: String,
+    enum: ["submitted", "verified", "unavailable"],
+    default: "unavailable",
   },
   residential_proof: {
     type: String,
+    default: null,
+    validate: {
+      validator: (v) => !v || v.match(/\.(jpg|jpeg|png|pdf)$/i),
+      message: "Residential proof must be a valid image or PDF file",
+    },
+  },
+  residential_proof_status : {
+    type: String,
+    enum: ["submitted", "verified", "unavailable"],
+    default: "unavailable",
   },
   my_wallets: {
     main_wallet_id : {

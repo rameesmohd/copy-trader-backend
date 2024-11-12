@@ -135,13 +135,14 @@ const fetchUserTransactions = async (req, res) => {
                     }),
                     ...(sanitizedFilters.status !== 'null' && { status: sanitizedFilters.status }),
                     ...(sanitizedFilters.type !== 'null' && { type: sanitizedFilters.type })
-                }
-            }
+                },
+            },
+            { $sort: { createdAt: -1 } }
         ];
 
-        console.log('Pipeline:', JSON.stringify(pipeline, null, 2));
+        // console.log('Pipeline:', JSON.stringify(pipeline, null, 2));
         
-        const data = await userTransactionModel.aggregate(pipeline);
+        const data = await userTransactionModel.aggregate(pipeline)
         return res.status(200).json({ result: data });
     } catch (error) {
         console.error(error);
