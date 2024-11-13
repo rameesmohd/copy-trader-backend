@@ -164,19 +164,19 @@ const handleEmailVerificationOtp=async(req,res)=>{
         const userData = await userModel.findOne({_id:user_id})
         const OTP = randomSixDigitNumber
         if(action=='send'){
-            // try {
-            //     await resend.emails.send({
-            //       from: process.env.WEBSITE_MAIL,
-            //       to: userData.email,
-            //       subject:"Verify email",
-            //       html: verification(OTP,userData.first_name),
-            //     });
-            // } catch (emailError) {
-            //     console.error("Error sending email:", emailError);
-            //     return res
-            //         .status(500)
-            //         .json({ errMsg: "Failed to send verification email." });
-            // }
+            try {
+                await resend.emails.send({
+                  from: process.env.WEBSITE_MAIL,
+                  to: userData.email,
+                  subject:"Verify email",
+                  html: verification(OTP,userData.first_name),
+                });
+            } catch (emailError) {
+                console.error("Error sending email:", emailError);
+                return res
+                    .status(500)
+                    .json({ errMsg: "Failed to send verification email." });
+            }
            return res.status(200).json({OTP,success: true,msg: "Otp sent successfully" });
         } else if(action=='verify'){
             const updatedUser = await userModel.findOneAndUpdate(
