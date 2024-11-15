@@ -8,7 +8,9 @@ const {
     fetchManager,
     fetchUserTransactions,
     handleEmailVerificationOtp,
-    handleKycProofSubmit
+    handleKycProofSubmit, 
+    submitTicket,
+    fetchTickets
 }=require('../controller/userController')
 const {
     makeDeposit, 
@@ -66,9 +68,11 @@ router.get('/transactions',fetchInvestmentTransactions)
 
 router.get('/transaction-history',fetchUserTransactions)
 
-router.route('/trades')
-    .get(fetchInvestmentTrades)
+router.get('/trades',fetchInvestmentTrades)
 
+router.route('/ticket')
+        .post( upload.array('upload'),submitTicket)
+        .get(fetchTickets)
 //----------------------kyc----------------------------------------
 
 router.post('/kyc/otp',handleEmailVerificationOtp)

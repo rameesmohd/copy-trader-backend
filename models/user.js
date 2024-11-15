@@ -56,7 +56,7 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0,
     min: 0,
-    max: 3, // assuming there are three steps in the KYC process
+    max: 4, // assuming there are three steps in the KYC process
     validate: {
       validator: Number.isInteger,
       message: "{VALUE} is not an integer value for KYC step",

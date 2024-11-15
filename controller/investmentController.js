@@ -60,7 +60,8 @@ const makeDeposit = async (req, res) => {
         type : 'transfer',
         status : 'approved',
         amount : amount , 
-        description : `Transferred to investment with manager ${manager.nickname}.`
+        description : `Transferred to investment with manager ${manager.nickname}.`,
+        transaction_type : "investment_transactions"
       })
       
       const investmentTransaction = new investmentTransactionModel({

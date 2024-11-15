@@ -103,7 +103,11 @@ const fetchManager =async(req,res)=>{
         
         const manager =  await managerModel.findOne({user_id : id },{password : 0})
         console.log("manager : ", manager);
-        return res.status(200).json({result : manager})
+        if(manager){
+            return res.status(200).json({result : manager})
+        }else{
+            return res.status(200).json({errMsg : "Invalid id"})
+        }
     } catch (error) {
         console.log(error);
         res.status(500).json({ errMsg: 'Server error!', error: error.message });
@@ -154,6 +158,7 @@ const fetchUserTransactions = async (req, res) => {
 };
 
 const { Resend } = require("resend");
+const ticketModel = require('../models/tickets');
 const resend = new Resend(process.env.RESEND_SECRET_KEY);
 const randomSixDigitNumber = Math.floor(100000 + Math.random() * 900000);
 
@@ -232,6 +237,46 @@ const handleKycProofSubmit=async(req,res)=>{
     }
 }
 
+const submitTicket=async(req,res)=>{
+    try {
+        console.log(req.files); 
+        console.log(req.body);
+
+        const { category, describe, user_id } = req.body;
+
+        const user = userModel.findOne({_id:user_id})
+        if(!user){
+            return res.status(400).json({errMsg : "User not found!"})
+        }
+        const uploadedFiles = req.files.map((file) => file.path);
+
+        const ticketData = {
+            user_id,
+            category,
+            describe,
+            upload: uploadedFiles, // Array of Cloudinary URLs
+        };
+
+        const ticket = await ticketModel.create(ticketData);
+
+        res.status(201).json({ success: true, ticket ,msg :"Ticket submitted successfully"});
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ errMsg: 'Server error!', error: error.message });
+    }
+}
+
+const fetchTickets = async(req,res)=>{
+    try {
+        const { user_id} = req.query
+        const myTickets = await ticketModel.find({user_id})
+        return res.status(200).json({result : myTickets});
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ errMsg: 'Server error!', error: error.message });
+    }
+}
+
 module.exports = {
     fetchUser,
     registerUser,
@@ -239,5 +284,7 @@ module.exports = {
     fetchManager,
     fetchUserTransactions,
     handleEmailVerificationOtp,
-    handleKycProofSubmit
+    handleKycProofSubmit,
+    submitTicket,
+    fetchTickets
 }

@@ -53,9 +53,9 @@ app.use(cors(corsOptions));
 app.use(express.json())
 app.use(express.urlencoded({extended: true}))
 
-app.use('/',userRoute)
 app.use('/master',masterRoute)
 app.use('/manager',managerRoute)
+app.use('/',userRoute)
 
 
 app.use((err, req, res, next) => {
