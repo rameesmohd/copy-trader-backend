@@ -13,13 +13,11 @@ const verifyToken = async (req, res, next) => {
   
     const tokenWithoutBearer = token.slice(7).trim();
     
-    return next();
-  
     const decoded = jwt.verify(tokenWithoutBearer, process.env.JWT_SECRET_KEY);
     console.log('decoded : '+decoded);
     req.decodedUser = decoded;
-       if (decoded.role === 'user') {
-        
+    if (decoded.role === 'user') {
+         return next();
      } else {
       return res.status(403).json({ message: 'Authentication failed: Invalid role.' });
      }

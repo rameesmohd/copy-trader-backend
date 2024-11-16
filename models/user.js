@@ -124,6 +124,10 @@ const userSchema = new mongoose.Schema({
       default : 0.00,
       set: twoDecimalPlaces
     },
+    total_referrals : {
+      type : Number,
+      default : 0
+    }
   },
   createdAt: { 
     type: Date, 

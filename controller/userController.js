@@ -84,7 +84,7 @@ const login =async(req,res)=>{
         const isMatch = await bcrypt.compare(password, userData.password);
         
         if(isMatch){
-            const token = jwt.sign({ _id:userData._id ,role : 'user'}, process.env.JWT_SECRET_KEY, { expiresIn: '7d' });
+            const token = jwt.sign({ _id:userData._id ,role : 'user'}, process.env.JWT_SECRET_KEY, { expiresIn: '24h' });
             const { password, ...userWithoutPassword } = userData;
            return res.status(200).json({result : userWithoutPassword,token})
         }
