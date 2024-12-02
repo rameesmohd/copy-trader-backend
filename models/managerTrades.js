@@ -34,11 +34,11 @@ const tradeSchema = new Schema(
         default : 0
       },
       open_time: { 
-        type: String, 
+        type: Date, 
         required: true 
       }, 
       close_time: { 
-        type: String, 
+        type: Date, 
         required: true 
       }, 
       manager_profit: { 

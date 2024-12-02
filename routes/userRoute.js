@@ -10,7 +10,8 @@ const {
     handleEmailVerificationOtp,
     handleKycProofSubmit, 
     submitTicket,
-    fetchTickets
+    fetchTickets,
+    fetchRebateTransactions
 }=require('../controller/userController')
 const {
     makeDeposit, 
@@ -71,6 +72,8 @@ router.get('/manager-orders',fetchOrderHistory)
 router.get('/transactions',fetchInvestmentTransactions)
 
 router.get('/transaction-history',fetchUserTransactions)
+
+router.get('/rebate-history',fetchRebateTransactions)
 
 router.get('/trades',fetchInvestmentTrades)
 

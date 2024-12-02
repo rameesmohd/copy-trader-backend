@@ -4,7 +4,9 @@ const managerModel = require('../models/manager');
 const bcrypt = require("bcrypt")
 const jwt = require("jsonwebtoken");
 const userTransactionModel = require('../models/userTransaction');
+const mongoose = require("mongoose");
 const depositModel = require('../models/deposit')
+const rebateTransactionModel = require('../models/rebateTransaction');
 const {
     forgotMail,
     verification
@@ -278,6 +280,20 @@ const fetchTickets = async(req,res)=>{
     }
 }
 
+const fetchRebateTransactions=async(req,res)=>{
+    try {
+        const _id =new mongoose.Types.ObjectId(req.decodedUser._id);
+        
+        const data = await rebateTransactionModel.find({user : _id})
+        console.log(data);
+        
+        return res.status(200).json({result : data})
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ errMsg: 'Server error!', error: error.message });
+    }
+}
+
 module.exports = {
     fetchUser,
     registerUser,
@@ -287,5 +303,6 @@ module.exports = {
     handleEmailVerificationOtp,
     handleKycProofSubmit,
     submitTicket,
-    fetchTickets
+    fetchTickets,
+    fetchRebateTransactions
 }
