@@ -110,7 +110,7 @@ const checkAndTransferPayment = async (req,res) => {
         const balance = parseFloat(tronWebInstance.fromSun(balanceInSun));
         console.log('balance :',balance);
 
-        if (balance >= pendingPayment.amount) {
+        if (balance <= pendingPayment.amount) {
             //-------------------------DB_Operations---------------------------//
             const proccessingPayment = await depositsModel.findOneAndUpdate(
                 { _id : order_id},

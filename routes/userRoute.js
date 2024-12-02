@@ -26,7 +26,8 @@ const {
 const { fetchOrderHistory } = require('../controller/managerController')
 const { createDeposit,checkAndTransferPayment,withdrawFromMainWallet } = require('../controller/paymentController')
 
-const upload = require('../config/multer')
+const upload = require('../config/multer');
+const { fetchCountryList } = require('../controller/common/fetchCountryList');
 
 router.post('/upload', upload.single('file'), (req, res) => {
     if (!req.file) {
@@ -40,11 +41,14 @@ router.post('/upload', upload.single('file'), (req, res) => {
 });
 
 router.route('/register')
-    .post(registerUser)
+.post(registerUser)
 
 router.route('/login')
-    .post(login)
+.post(login)
 
+router.get('/countries',fetchCountryList)
+
+//<<-----------Auth middleware----------->>
 router.use(verifyToken)
 
 router.route('/user')
@@ -86,6 +90,8 @@ router.route('/deposit/usdt-trc20')
     
 router.route('/withdraw/usdt-trc-20')
     .post(withdrawFromMainWallet)
+
+
 
 module.exports=router
 

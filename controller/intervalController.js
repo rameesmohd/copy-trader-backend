@@ -1,6 +1,7 @@
 const managerModel = require('../models/manager');
 const investmentModel = require('../models/investment');
 const investmentTransactionModel = require('../models/investmentTransaction');
+const userModel = require('../models/user')
 
 const intervalInvestmentHandle = async (req, res) => {
     try {
@@ -21,7 +22,16 @@ const intervalInvestmentHandle = async (req, res) => {
                 investment.net_profit += netIntervalProfit;
 
                 // Update manager's performance fee and investment's fee tracking
-                manager.total_performance_fee_collected += investment.performance_fee_projected;
+                let adjustedPerformanceFee =investment.performance_fee_projected
+                if(investment.inviter){
+                    const inviter =  await userModel.findOne({user_id : investment.inviter})
+                    if(inviter){
+                        // Calculate inviter's share (5% of total profit)
+                        const inviterShare = investment.current_interval_profit_equity * 0.05;
+                        adjustedPerformanceFee = investment.performance_fee_projected - inviterShare;
+                    }
+                }
+                manager.total_performance_fee_collected += adjustedPerformanceFee;
                 investment.performance_fee_paid += investment.performance_fee_projected;
 
                 // Reset performance fee projections and profits

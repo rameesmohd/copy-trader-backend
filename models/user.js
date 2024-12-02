@@ -19,7 +19,8 @@ const userSchema = new mongoose.Schema({
   user_id : {
     type : String,
     unique : true,
-    default: () => Math.random().toString(36).substring(2, 10).toUpperCase() 
+    default: () => Math.random().toString(36).substring(2, 10).toUpperCase(),
+    index : true 
   },
   first_name: {
     type: String,
@@ -110,16 +111,19 @@ const userSchema = new mongoose.Schema({
       default : 0.00,
       set: twoDecimalPlaces
     },
-    earned_profit : {
+    rebate_wallet_id : {
+      type: String,
+      default: () => Math.random().toString(36).substring(2, 10).toUpperCase(),
+      index: true  
+    },
+    rebate_wallet: {
       type : Number,
       default : 0.00,
       set: twoDecimalPlaces
     },
-    rebate_wallet_id : {
-      type: String,
-      default: () => Math.random().toString(36).substring(2, 10).toUpperCase() 
-    },
-    rebate_wallet: {
+  },
+  referral : {
+    total_earned_commission : {
       type : Number,
       default : 0.00,
       set: twoDecimalPlaces

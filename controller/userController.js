@@ -1,4 +1,4 @@
-const {validateLogin,validateRegister} = require('./validations/validations');
+const {validateLogin,validateRegister} = require('./common/validations');
 const userModel = require('../models/user')
 const managerModel = require('../models/manager');
 const bcrypt = require("bcrypt")
@@ -134,6 +134,7 @@ const fetchUserTransactions = async (req, res) => {
         const pipeline = [
             {
                 $match: {
+                    
                     ...(createdAtFrom && createdAtTo && {
                         createdAt: {
                             $gte: createdAtFrom,

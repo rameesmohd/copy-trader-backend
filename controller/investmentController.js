@@ -7,11 +7,14 @@ const investmentTradesModel =require('../models/investorTrades')
 
 const makeDeposit = async (req, res) => {
     try {
-      const { userId, managerId, amount, referralCode } = req.body;
-  
+      const { userId, managerId, amount, ref } = req.body;
+      console.log(req.body);
+      
       const user = await userModel.findById(userId);
       const manager = await managerModel.findById(managerId);
-
+      const inviter = await userModel.findOne({user_id : ref})
+      console.log(inviter);
+      
       if(!user || !manager ){
         return res
         .status(400)
@@ -52,6 +55,13 @@ const makeDeposit = async (req, res) => {
       });
       
       await user.save();
+      
+      if(inviter && ref != user.user_id){
+        inviter.referral.total_referrals += 1
+        await inviter.save()
+        investment.inviter = ref
+      }
+
       await investment.save();
       
       const userTransaction = new userTransactionModel({
@@ -72,6 +82,7 @@ const makeDeposit = async (req, res) => {
         amount : amount , 
         description : `Intial investment to manager ${manager.nickname}'s portfolio.`
       })
+
 
       await userTransaction.save()
       await investmentTransaction.save()
@@ -184,6 +195,7 @@ const topUpInvestment =async(req,res)=>{
           type : 'transfer',
           status : 'approved',
           amount : amount , 
+          transaction_type : 'investment_transactions',
           description : `Topup to investment with manager ${investment.manager_nickname}.`
         })
         
