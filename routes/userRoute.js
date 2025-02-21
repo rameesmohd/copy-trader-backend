@@ -11,8 +11,9 @@ const {
     handleKycProofSubmit, 
     submitTicket,
     fetchTickets,
-    fetchRebateTransactions
-}=require('../controller/userController')
+    fetchRebateTransactions,
+    fetchManagerOrderHistory
+}=require('../controller/user/userController')
 const {
     makeDeposit, 
     fetchMyInvestments,
@@ -21,11 +22,15 @@ const {
     topUpInvestment,
     handleInvestmentWithdrawal,
     fetchInvestmentTrades ,
-
+    
 }=require('../controller/investmentController')
 
-const { fetchOrderHistory } = require('../controller/managerController')
-const { createDeposit,checkAndTransferPayment,withdrawFromMainWallet } = require('../controller/paymentController')
+// const { fetchOrderHistory } = require('../controller/manager/managerController')
+const { 
+    trc20CreateDeposit,
+    trc20CheckAndTransferPayment,
+    trc20WithdrawFromMainWallet 
+} = require('../controller/paymentController')
 
 const upload = require('../config/multer');
 const { fetchCountryList } = require('../controller/common/fetchCountryList');
@@ -67,7 +72,7 @@ router.route('/manager')
     .get(fetchManager)
     .post(makeDeposit)
 
-router.get('/manager-orders',fetchOrderHistory)    
+router.get('/manager-orders',fetchManagerOrderHistory)    
 
 router.get('/transactions',fetchInvestmentTransactions)
 
@@ -80,19 +85,21 @@ router.get('/trades',fetchInvestmentTrades)
 router.route('/ticket')
         .post( upload.array('upload'),submitTicket)
         .get(fetchTickets)
+
 //----------------------kyc----------------------------------------
 
 router.post('/kyc/otp',handleEmailVerificationOtp)
+
 router.post('/kyc',handleKycProofSubmit)
 
 //---------------------- wallet deposit & withdraws-------------------//
 
 router.route('/deposit/usdt-trc20')
-    .get(createDeposit) 
-    .post(checkAndTransferPayment)
+    .get(trc20CreateDeposit) 
+    .post(trc20CheckAndTransferPayment)
     
 router.route('/withdraw/usdt-trc-20')
-    .post(withdrawFromMainWallet)
+    .post(trc20WithdrawFromMainWallet)
 
 
 

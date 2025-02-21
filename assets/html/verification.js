@@ -163,6 +163,7 @@ const purchaseConfirmation = (userName) =>
                   </tr>
                 </tbody>
               </table>`);
+              
 const purchaseConfirmationAdmin = (userName) =>
   emailTemplate(`       <table
                 cellspacing="0"

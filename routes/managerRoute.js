@@ -1,5 +1,5 @@
 const express = require('express');
-const { getManagerData } = require('../controller/managerController');
+const { getManagerData,fetchMyInvesters } = require('../controller/manager/managerController');
 const { addTradeToManager , getTrades ,rollOverTradeDistribution } = require('../controller/tradeController');
 const  { intervalInvestmentHandle } = require('../controller/intervalController')
 
@@ -12,6 +12,9 @@ router.route('/trade')
         .get(getTrades)
         .post(addTradeToManager)
         .patch(rollOverTradeDistribution)
+
+router.route('/investments')
+        .get(fetchMyInvesters)
 
 router.route('/interval-test')
         .get(intervalInvestmentHandle)

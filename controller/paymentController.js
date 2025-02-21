@@ -30,7 +30,7 @@ const generateUniqueCode = () => {
 };
 
 // Endpoint to generate a unique address and amount for payment
-const createDeposit = async (req, res) => {
+const trc20CreateDeposit = async (req, res) => {
     try {
         const { user_id, payment_mode, amount } = req.query;
 
@@ -87,7 +87,7 @@ const accountHasEnoughTrx = async (tronWebInstance,address, requiredBalance) => 
     return balance >= requiredBalance;
 };
 
-const checkAndTransferPayment = async (req,res) => {
+const trc20CheckAndTransferPayment = async (req,res) => {
     const { order_id } = req.body;
 
     console.log(req.body);
@@ -196,7 +196,7 @@ const checkAndTransferPayment = async (req,res) => {
     }
 };
 
-const withdrawFromMainWallet = async (req, res) => {
+const trc20WithdrawFromMainWallet = async (req, res) => {
     const { user_id,recipient, amount, network_fee } = req.body;
     console.log( req.body);
     
@@ -470,9 +470,9 @@ const withdrawFromMainWallet = async (req, res) => {
 // }
 
 module.exports = {
-    createDeposit,
-    checkAndTransferPayment, 
-    withdrawFromMainWallet,
+    trc20CreateDeposit,
+    trc20CheckAndTransferPayment, 
+    trc20WithdrawFromMainWallet,
     // withdrawFromSecondWallet,
     // getAddressBalance
 };

@@ -4,7 +4,6 @@ const managerModel = require('../models/manager')
 const managerTradeModel = require('../models/managerTrades')
 const { ObjectId } = require('mongoose').Types;
 
-
 const addTradeToManager=async(req,res)=>{
     try {
         const { formData , manager_id } = req.body
@@ -41,7 +40,6 @@ const addTradeToManager=async(req,res)=>{
     }
 }
 
-
 const getTrades=async(req,res)=>{
     try {
         const {_id,distributed} = req.query
@@ -62,7 +60,6 @@ const getTrades=async(req,res)=>{
         res.status(500).json({errMsg : 'sever side error'})
     }
 }
-
 
 const getDailyGrowthData = async (managerId) => {
     const dailyGrowth = await managerTradeModel.aggregate([
@@ -94,8 +91,6 @@ const getDailyGrowthData = async (managerId) => {
       value: data.value,
     }));
   };
-
-  
 
 // const rollOverTradeDistribution = async (req, res) => {
 //     try {

@@ -1,16 +1,19 @@
-const {validateLogin,validateRegister} = require('./common/validations');
-const userModel = require('../models/user')
-const managerModel = require('../models/manager');
+const {validateLogin,validateRegister} = require('../common/validations');
+const userModel = require('../../models/user')
+const managerModel = require('../../models/manager');
 const bcrypt = require("bcrypt")
 const jwt = require("jsonwebtoken");
-const userTransactionModel = require('../models/userTransaction');
+const userTransactionModel = require('../../models/userTransaction');
 const mongoose = require("mongoose");
-const depositModel = require('../models/deposit')
-const rebateTransactionModel = require('../models/rebateTransaction');
+const depositModel = require('../../models/deposit')
+const rebateTransactionModel = require('../../models/rebateTransaction');
+const managerTradeModel = require('../../models/managerTrades')
+
+
 const {
     forgotMail,
     verification
-  } = require("../assets/html/verification");
+} = require("../../assets/html/verification");
 
 const fetchUser =async(req,res)=>{
     try {
@@ -161,7 +164,7 @@ const fetchUserTransactions = async (req, res) => {
 };
 
 const { Resend } = require("resend");
-const ticketModel = require('../models/tickets');
+const ticketModel = require('../../models/tickets');
 const resend = new Resend(process.env.RESEND_SECRET_KEY);
 const randomSixDigitNumber = Math.floor(100000 + Math.random() * 900000);
 
@@ -242,7 +245,8 @@ const handleKycProofSubmit=async(req,res)=>{
 
 const submitTicket=async(req,res)=>{
     try {
-        console.log(req.files); 
+    
+        console.log("ssssssssssss",req.files); 
         console.log(req.body);
 
         const { category, describe, user_id } = req.body;
@@ -294,6 +298,16 @@ const fetchRebateTransactions=async(req,res)=>{
     }
 }
 
+const fetchManagerOrderHistory=async(req,res)=>{
+    try {
+        const {_id} = req.query
+        const trades = await managerTradeModel.find({manager : _id,is_distributed:true})
+        res.status(200).json({result : trades})
+    } catch (error) {
+        res.status(500).json({errMsg : 'sever side error'})
+    }
+}
+
 module.exports = {
     fetchUser,
     registerUser,
@@ -304,5 +318,6 @@ module.exports = {
     handleKycProofSubmit,
     submitTicket,
     fetchTickets,
-    fetchRebateTransactions
+    fetchRebateTransactions,
+    fetchManagerOrderHistory
 }
