@@ -12,11 +12,22 @@ const transactionSchema = new Schema({
         ref: 'investments', 
         index: true 
       },
+      manager : {
+        type: Schema.Types.ObjectId, 
+        ref: 'managers',
+        index : true 
+      },
       type: {
         type: String,
-        enum: ['deposit', 'withdrawal','transfer', 'profit' ,'manager_fee'],
+        enum: ['deposit', 'withdrawal','manager_fee'],
         required: true,
         index: true 
+      },
+      from : {
+        type : String,
+      },
+      to : {
+        type : String
       },
       status: { 
         type: String, 
@@ -26,14 +37,6 @@ const transactionSchema = new Schema({
       amount: { 
         type: Number, 
         required: true 
-      },
-      deduction : {
-        type : Number,
-        default : 0
-      },
-      is_deducted : {
-        type : Boolean,
-        default : false
       },
       comment: {
         type : String,
@@ -47,6 +50,14 @@ const transactionSchema = new Schema({
       related_transaction: { 
         type: Schema.Types.ObjectId, 
         ref: 'user_transactions' 
+      },
+      deduction : {
+        type : Number,
+        default : 0
+      },
+      is_deducted : {
+        type : Boolean,
+        default : false
       },
       createdAt: { 
         type: Date, 

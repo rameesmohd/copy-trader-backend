@@ -9,7 +9,6 @@ const depositModel = require('../../models/deposit')
 const rebateTransactionModel = require('../../models/rebateTransaction');
 const managerTradeModel = require('../../models/managerTrades')
 
-
 const {
     forgotMail,
     verification
@@ -18,7 +17,7 @@ const {
 const fetchUser =async(req,res)=>{
     try {
         const {_id}=req.query
-        const user = await userModel.findOne({_id})
+        const user = await userModel.findOne({_id},{password : 0})
         if(!user){
             return res.status(400).json({errMsg:'User not found!'})
         }

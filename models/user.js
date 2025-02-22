@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
-
 const twoDecimalPlaces = (value) => {
   return parseFloat(value).toFixed(2);
 };
@@ -98,7 +97,7 @@ const userSchema = new mongoose.Schema({
   },
   residential_proof_status : {
     type: String,
-    enum: ["submitted", "verified", "unavailable"],
+    enum: ["submitted", "verified", "unavailable"], 
     default: "unavailable",
   },
   my_wallets: {

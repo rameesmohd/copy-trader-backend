@@ -1,5 +1,5 @@
-const userModel = require('../models/user')
-const managerModel = require('../models/manager')
+const userModel = require('../../models/user')
+const managerModel = require('../../models/manager')
 
 const fetchUser =async(req,res)=>{
     try {

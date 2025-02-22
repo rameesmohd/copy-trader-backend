@@ -69,20 +69,24 @@ const makeDeposit = async (req, res) => {
         investment : investment._id,
         type : 'transfer',
         status : 'approved',
-        amount : amount , 
-        description : `Transferred to investment with manager ${manager.nickname}.`,
+        amount : amount ,
+        from : `WALL${user.my_wallets.main_wallet_id}`,
+        to : `INV${investment.inv_id}`, 
+        description : `Transferred to investment manager ${manager.nickname}.`,
         transaction_type : "investment_transactions"
       })
       
       const investmentTransaction = new investmentTransactionModel({
         user : user._id,
         investment : investment._id,
+        manager : manager._id,
         type : 'deposit',
         status : 'pending',
+        from : `WALL${user.my_wallets.main_wallet_id}`,
+        to : `INV${investment.inv_id}`,
         amount : amount , 
         description : `Intial investment to manager ${manager.nickname}'s portfolio.`
       })
-
 
       await userTransaction.save()
       await investmentTransaction.save()
@@ -128,7 +132,7 @@ const approveTransaction = async (transactionId) => {
       // Create a new deposit object with lock duration
       const deposit = {
           amount : transaction.amount,
-          lock_duration: investment.trading_liquidity_period, // 30 days lock period for example (can be customized)
+          lock_duration: investment.trading_liquidity_period, // 30 days lock period
           deposited_at: new Date(),
       };
       
@@ -137,7 +141,6 @@ const approveTransaction = async (transactionId) => {
       investment.total_deposit += transaction.amount; // Update total deposits
       investment.deposits.push(deposit); // Add the deposit to the deposits array
       
-
       const manager = await managerModel.findById(investment.manager);
       manager.total_funds += transaction.amount;
       manager.total_investors += 1
@@ -194,6 +197,8 @@ const topUpInvestment =async(req,res)=>{
           investment : investment._id,
           type : 'transfer',
           status : 'approved',
+          from : `WALL${user.my_wallets.main_wallet_id}`,
+          to : `INV${investment.inv_id}`,
           amount : amount , 
           transaction_type : 'investment_transactions',
           description : `Topup to investment with manager ${investment.manager_nickname}.`
@@ -202,7 +207,10 @@ const topUpInvestment =async(req,res)=>{
         const investmentTransaction = new investmentTransactionModel({
           user : user._id,
           investment : investment._id,
+          manager : investment.manager,
           type : 'deposit',
+          from : `WALL${user.my_wallets.main_wallet_id}`,
+          to : `INV${investment.inv_id}`,
           status : 'pending',
           amount : amount , 
           description : `Topup added to manager ${investment.manager_nickname}'s portfolio.`
@@ -380,11 +388,16 @@ const handleInvestmentWithdrawal = async (req, res) => {
     let withdrawTransaction;
     console.log('availableEquityForWithdraw:', availableEquityForWithdraw, 'Requested:', withdrawalAmount);
 
+    const user = await userModel.findById(investment.user);
+
     if (withdrawalAmount <= availableEquityForWithdraw) {
       // Case 1: Withdraw from available unlocked equity
       withdrawTransaction = new investmentTransactionModel({
         user: investment.user,
         investment: investment._id,
+        manager: investment.manager,
+        from : `INV${investment.inv_id}`,
+        to : `WALL${user.my_wallets.main_wallet_id}`,
         type: 'withdrawal',
         status: 'pending',
         amount: withdrawalAmount,
@@ -424,6 +437,9 @@ const handleInvestmentWithdrawal = async (req, res) => {
       withdrawTransaction = new investmentTransactionModel({
         user: investment.user,
         investment: investment._id,
+        manager: investment.manager,
+        from : `INV${investment.inv_id}`,
+        to : `WALL${user.my_wallets.main_wallet_id}`,
         type: 'withdrawal',
         status: 'pending',
         amount: withdrawalAmount,
@@ -439,8 +455,11 @@ const handleInvestmentWithdrawal = async (req, res) => {
         withdrawTransaction = new investmentTransactionModel({
           user: investment.user,
           investment: investment._id,
+          manager: investment.manager,
           type: 'withdrawal',
           status: 'rejected',
+          from : `INV${investment.inv_id}`,
+          to : `WALL${user.my_wallets.main_wallet_id}`,
           amount: withdrawalAmount,
           comment: `Insufficient funds from completed trading liquidity period or profits.`
         });
@@ -491,6 +510,7 @@ const approveInvestmentWithdrawal = async (withdrawTransactionId) => {
       const feeTransaction = new investmentTransactionModel({
         user: investment.user,
         investment: investment._id,
+        manager: investment.manager,
         type: 'manager_fee',
         status: 'success',
         amount: performanceFee,
@@ -508,6 +528,8 @@ const approveInvestmentWithdrawal = async (withdrawTransactionId) => {
       investment: investment._id,
       type: 'deposit',
       status: 'approved',
+      from : `INV${investment.inv_id}`,
+      to : `WALL${user.my_wallets.main_wallet_id}`,
       amount: finalAmount,
       transaction_id:withdrawTransaction.transaction_id,
       description: `Withdraw from investment ${investment._id}`,
@@ -538,12 +560,32 @@ const fetchInvestmentTrades=async(req,res)=>{
   }
 }
 
+//-------------------------------------------------------Manager Functions------------------------------------------------//
+
+const fetchAllInvestmentTransactions=async(req,res)=>{
+  try {
+    const { manager_id ,type} = req.query
+    const myInvestmentDeposits = await investmentTransactionModel.find({manager : manager_id,type})
+    res.status(200).json({result : myInvestmentDeposits})
+  } catch { 
+    console.error(error);
+    return res.status(500).json({ errMsg: 'Server error!', error: error.message });
+  }
+}
+
+
+
 module.exports = {
+    //User
     makeDeposit,
     fetchMyInvestments,
     fetchInvestment,
     fetchInvestmentTransactions,
     topUpInvestment,
     handleInvestmentWithdrawal,
-    fetchInvestmentTrades
+    fetchInvestmentTrades,
+
+    //Manager
+    fetchAllInvestmentTransactions
+
 }

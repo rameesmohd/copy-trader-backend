@@ -5,7 +5,7 @@ const {
         addManager ,
         fetchManagers,
         updateManager
-    } =require('../controller/masterController')
+    } =require('../controller/master/masterController')
 
 router.route('/users')
     .get(fetchUser)

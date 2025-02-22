@@ -1,8 +1,8 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
-const twoDecimalPlaces = (value) => {
-  return parseFloat(value).toFixed(2);
+const truncateToTwoDecimals = (num) => {
+  return Math.floor(num * 100) / 100;
 };
 
 const managerSchema = new mongoose.Schema({
@@ -11,7 +11,7 @@ const managerSchema = new mongoose.Schema({
     unique: true,
     required: true,
   },
-  user_id : {
+  manager_id : {
     type : String,
     unique : true,
     default: () => Math.floor(100000 + Math.random() * 900000).toString(),
@@ -59,10 +59,12 @@ const managerSchema = new mongoose.Schema({
   open_trade_profit: {
     type: Number,
     required: true,
+    set : truncateToTwoDecimals
   },
   closed_trade_profit: {
     type: Number,
     required: true,
+    set : truncateToTwoDecimals
   },
   origin: {
     type: String,
@@ -74,6 +76,7 @@ const managerSchema = new mongoose.Schema({
   total_trade_profit: {
     type: Number,
     required: true,
+    set : truncateToTwoDecimals
   },
   min_initial_investment: {
     type: Number,
@@ -94,6 +97,7 @@ const managerSchema = new mongoose.Schema({
   total_funds: {
     type: Number,
     required: true,
+    set : truncateToTwoDecimals
   },
   risks :{
     type : Number,
@@ -135,9 +139,14 @@ const managerSchema = new mongoose.Schema({
   },
   total_performance_fee_collected: {
     type: Number,
-    default : 0
+    default : 0,
+    set : truncateToTwoDecimals
   },
-  createdAt: { type: Date, default: Date.now, index: true },
+  createdAt: { 
+    type: Date, 
+    default: Date.now, 
+    index: true 
+  },
   },
   {
     timestamps: true,

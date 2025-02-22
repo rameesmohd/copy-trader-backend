@@ -37,6 +37,7 @@ const truncateToTwoDecimals = (num) => {
 
 const investmentSchema = new mongoose.Schema(
   {
+    inv_id: { type : String, default:()=>Math.random().toString(36).substring(2, 10).toUpperCase() }, 
     user: { type: Schema.Types.ObjectId, ref: 'users' },
     manager: { type: Schema.Types.ObjectId, ref: 'managers' },
     manager_nickname: { type: String, required: true },
