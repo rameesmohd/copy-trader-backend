@@ -48,10 +48,13 @@ const corsOptions = {
   allowedHeaders: ["Content-Type", "Authorization","X-Requested-With"],
   optionsSuccessStatus: 204,
 };
-   
+
 app.use(cors(corsOptions));
 app.use(express.json())
 app.use(express.urlencoded({extended: true}))
+require('./cronjobs/cronRollover')
+
+
 
 app.use('/master',masterRoute)
 app.use('/manager',managerRoute)

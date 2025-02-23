@@ -18,7 +18,6 @@ const userSchema = new mongoose.Schema({
   user_id : {
     type : String,
     unique : true,
-    default: () => Math.random().toString(36).substring(2, 10).toUpperCase(),
     index : true 
   },
   first_name: {

@@ -45,6 +45,10 @@ const tradeSchema = new Schema(
       manager_profit: { 
         type: Number, 
         required: true }, 
+      rollover_id : { 
+        type: Schema.Types.ObjectId, 
+        ref: 'rollover' 
+      },
       txid: { 
         type: String, 
         default: () => Math.random().toString(36).substring(2, 10).toUpperCase() 

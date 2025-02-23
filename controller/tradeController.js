@@ -189,7 +189,7 @@ const getDailyGrowthData = async (managerId) => {
 //     }
 // };
 
-const rollOverTradeDistribution = async (req, res) => {
+const rollOverTradeDistribution = async (rollover_id) => {
   try {
       // Fetch undistributed trades
       const unDistributedTrades = await managerTradeModel.find({ is_distributed: false });
@@ -220,7 +220,7 @@ const rollOverTradeDistribution = async (req, res) => {
           // Distribute the profit proportionally to each investment
           await Promise.all(
               investments.map(async (investment) => {
-                  const investorProfit = (investment.total_funds / totalFunds) * tradeProfit;
+                  const investorProfit = Number(((investment.total_funds / totalFunds) * tradeProfit).toFixed(2));
 
                   // Update investment profits
                   investment.current_interval_profit += investorProfit;
@@ -246,6 +246,7 @@ const rollOverTradeDistribution = async (req, res) => {
                       close_time: trade.close_time,
                       manager_profit: trade.manager_profit,
                       investor_profit: investorProfit,
+                      rollover_id : rollover_id
                   });
                   await investorTradeHistory.save();
                   await investment.save();
@@ -270,13 +271,14 @@ const rollOverTradeDistribution = async (req, res) => {
           // Save manager updates
           await manager.save();
       }
-      return res.status(200).json({ msg: 'Profit distributed successfully' });
+      // return res.status(200).json({ msg: 'Profit distributed successfully' });
+      return true
   } catch (error) {
       console.error('Error in trade distribution:', error);
-      res.status(500).json({ errMsg: 'Server side error', error: error.message });
+      // res.status(500).json({ errMsg: 'Server side error', error: error.message });
+      return false
   }
 };
-
 
 
 module.exports = { 

@@ -1,5 +1,6 @@
 const investmentModel = require('../../models/investment')
 const managerModel = require('../../models/manager')
+const {fetchAndUseLatestRollover} = require('../rolloverController')
 
 const getManagerData=async(req,res)=>{
     try {
@@ -11,7 +12,8 @@ const getManagerData=async(req,res)=>{
             growth_data:0,
             _v: 0
         })
-        res.status(200).json({result : manager})
+        const latestRollover = await fetchAndUseLatestRollover()
+        res.status(200).json({result : manager,rollover : latestRollover})
     } catch (error) {
         res.status(500).json({errMsg : 'sever side error'})
     }

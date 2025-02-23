@@ -14,7 +14,7 @@ const managerSchema = new mongoose.Schema({
   manager_id : {
     type : String,
     unique : true,
-    default: () => Math.floor(100000 + Math.random() * 900000).toString(),
+    default: () => Math.floor(1000 + Math.random() * 9000).toString(),
     required: true
   },
   img_url:{

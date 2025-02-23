@@ -41,7 +41,7 @@ const investmentSchema = new mongoose.Schema(
     user: { type: Schema.Types.ObjectId, ref: 'users' },
     manager: { type: Schema.Types.ObjectId, ref: 'managers' },
     manager_nickname: { type: String, required: true },
-    is_active: { type: Boolean, default : true },
+    status: { type: String, enum: ["active", "closed"], default: "active" },
     trading_interval: { type: String, enum: ['daily', 'weekly', 'monthly'] },
     min_initial_investment: { type: Number, required: true },
     min_top_up: { type: Number, required: true },
@@ -68,6 +68,8 @@ const investmentSchema = new mongoose.Schema(
     performance_fee_projected: { type: Number, default: 0 ,set: truncateToTwoDecimals},//current interval performance fee pending
 
     inviter : {type : String, required : false},
+
+    last_rollover: { type: mongoose.Schema.Types.ObjectId, ref: "rollover" }, // Tracks last applied rollover
   },
   { timestamps: true }
 );

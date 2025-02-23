@@ -3,7 +3,25 @@ const investmentTransactionModel = require('../models/investmentTransaction');
 const userTransactionModel = require('../models/userTransaction');
 const userModel = require('../models/user')
 const managerModel = require('../models/manager');
-const investmentTradesModel =require('../models/investorTrades')
+const investmentTradesModel =require('../models/investorTrades');
+const rolloverModel = require('../models/rollover');
+
+const getLatestPendingRollover = async () => {
+  const latestRollover = await rolloverModel.findOne({ status: "completed" }).sort({ start_time: -1 });
+  console.log(latestRollover);
+  
+  return latestRollover;
+};
+
+const fetchAndUseLatestRollover = async () => {
+  const latestPendingRollover = await getLatestPendingRollover();
+  if (!latestPendingRollover) {
+    console.log("No rollovers found!");
+    return;
+  }
+  console.log("Latest Rollover ID:", latestPendingRollover._id);
+  return latestPendingRollover
+};
 
 const makeDeposit = async (req, res) => {
     try {
@@ -38,8 +56,10 @@ const makeDeposit = async (req, res) => {
       // Deduct the amount from user's wallet
       user.my_wallets.main_wallet -= amount;
 
+      const invCount = await investmentModel.countDocuments();
 
       const investment = new investmentModel({
+        inv_id: 21000+invCount,
         user: user._id,
         manager: manager._id,
         manager_nickname: manager.nickname,
@@ -52,6 +72,7 @@ const makeDeposit = async (req, res) => {
         manager_performance_fee: manager.performance_fees_percentage,
         min_withdrawal : manager.min_withdrawal,
         deposits: [], 
+
       });
       
       await user.save();
@@ -65,35 +86,36 @@ const makeDeposit = async (req, res) => {
       await investment.save();
       
       const userTransaction = new userTransactionModel({
-        user : user._id,
-        investment : investment._id,
-        type : 'transfer',
-        status : 'approved',
-        amount : amount ,
-        from : `WALL${user.my_wallets.main_wallet_id}`,
-        to : `INV${investment.inv_id}`, 
-        description : `Transferred to investment manager ${manager.nickname}.`,
-        transaction_type : "investment_transactions"
-      })
+        user: user._id,
+        investment: investment._id,
+        type: "transfer",
+        status: "approved", 
+        amount: amount,
+        from: user.my_wallets?.main_wallet_id ? `WALL${user.my_wallets.main_wallet_id}` : "UNKNOWN",
+        to: investment.inv_id ? `INV${investment.inv_id}` : "UNKNOWN",
+        description: `Transferred to investment manager ${manager.nickname}.`,
+        transaction_type: "investment_transactions",
+      });
+      await userTransaction.save()
       
       const investmentTransaction = new investmentTransactionModel({
-        user : user._id,
-        investment : investment._id,
-        manager : manager._id,
-        type : 'deposit',
-        status : 'pending',
-        from : `WALL${user.my_wallets.main_wallet_id}`,
-        to : `INV${investment.inv_id}`,
-        amount : amount , 
-        description : `Intial investment to manager ${manager.nickname}'s portfolio.`
-      })
-
-      await userTransaction.save()
+        user: user._id,
+        investment: investment._id,
+        manager: manager._id,
+        type: "deposit",
+        status: "pending", 
+        from: user.my_wallets?.main_wallet_id ? `WALL${user.my_wallets.main_wallet_id}` : "UNKNOWN",
+        to: investment.inv_id ? `INV${investment.inv_id}` : "UNKNOWN",
+        amount: amount,
+        description: `Initial investment to manager ${manager.nickname}'s portfolio.`,
+        related_transaction: userTransaction._id,
+      });
       await investmentTransaction.save()
-      
-      await manager.save();
 
-      await approveTransaction(investmentTransaction._id)
+      manager.total_investors += 1
+      await manager.save()
+      
+      // await approveDepositTransaction(investmentTransaction._id)
   
       // Return success response with investment ID
       return res.status(201).json({
@@ -108,31 +130,34 @@ const makeDeposit = async (req, res) => {
     }
   };
 
-const approveTransaction = async (transactionId) => {
+const approveDepositTransaction = async (transactionId,rollover_id) => {
     try {
       // Find the transaction by ID
       const transaction = await investmentTransactionModel.findById(transactionId);
   
       if (!transaction || transaction.status !== 'pending') {
-        throw new Error('Transaction not found or already approved');
+        // throw new Error('Transaction not found or already approved');
+        console.log('Transaction not found or already approved');
+        return false
       }
   
       // Update transaction status to approved
       transaction.status = 'approved';
+      transaction.rollover_id = rollover_id
       await transaction.save();
 
-      
       // Find the related investment
       const investment = await investmentModel.findById(transaction.investment);
 
       if (!investment) {
-        throw new Error('Investment not found');
+        console.log('Investment not found');
+        return false
       }
 
       // Create a new deposit object with lock duration
       const deposit = {
           amount : transaction.amount,
-          lock_duration: investment.trading_liquidity_period, // 30 days lock period
+          lock_duration: investment.trading_liquidity_period, // eg: 30 days lock period
           deposited_at: new Date(),
       };
       
@@ -151,7 +176,8 @@ const approveTransaction = async (transactionId) => {
       return true
     } catch (error) {
       console.error(error);
-      throw new Error('Error approving transaction');
+      return false
+      // throw new Error('Error approving transaction');
     }
 };
   
@@ -201,7 +227,7 @@ const topUpInvestment =async(req,res)=>{
           to : `INV${investment.inv_id}`,
           amount : amount , 
           transaction_type : 'investment_transactions',
-          description : `Topup to investment with manager ${investment.manager_nickname}.`
+          comment : `Topup to investment with manager ${investment.manager_nickname}.`
         })
         
         const investmentTransaction = new investmentTransactionModel({
@@ -213,7 +239,7 @@ const topUpInvestment =async(req,res)=>{
           to : `INV${investment.inv_id}`,
           status : 'pending',
           amount : amount , 
-          description : `Topup added to manager ${investment.manager_nickname}'s portfolio.`
+          comment : `Topup added to manager ${investment.manager_nickname}'s portfolio.`
         })
   
         await userTransaction.save()
@@ -221,7 +247,7 @@ const topUpInvestment =async(req,res)=>{
 
         await user.save();
         
-        await approveTopup(investmentTransaction._id)
+        // await approveTopup(investmentTransaction._id)
 
         // Return success response with investment ID
         return res.status(201).json({
@@ -236,55 +262,54 @@ const topUpInvestment =async(req,res)=>{
       }
 }
 
-const approveTopup=async(transactionId)=>{
-    try {
-      // Find the transaction by ID
-      const transaction = await investmentTransactionModel.findById(transactionId);
+// const approveTopup=async(transactionId,rollover_id)=>{
+//     try {
+//       // Find the transaction by ID
+//       const transaction = await investmentTransactionModel.findById(transactionId);
   
-      if (!transaction || transaction.status !== 'pending') {
-        throw new Error('Transaction not found or already approved');
-      }
+//       if (!transaction || transaction.status !== 'pending') {
+//         throw new Error('Transaction not found or already approved');
+//       }
   
-      // Update transaction status to approved
-      transaction.status = 'approved';
-      await transaction.save();
+//       // Update transaction status to approved
+//       transaction.status = 'approved';
+//       transaction.rollover_id = rollover_id
+//       await transaction.save();
 
       
-      // Find the related investment
-      const investment = await investmentModel.findById(transaction.investment);
+//       // Find the related investment
+//       const investment = await investmentModel.findById(transaction.investment);
 
-      if (!investment) {
-        throw new Error('Investment not found');
-      }
+//       if (!investment) {
+//         return res.status(400).json({ errMsg: 'investment no found!!', error: error.message });
+//       }
 
-      // Create a new deposit object with lock duration
-      const deposit = {
-        amount:transaction.amount,
-        lock_duration: investment.trading_liquidity_period, // 30 days lock period for example (can be customized)
-        deposited_at: new Date(),
-      };
+//       // Create a new deposit object with lock duration
+//       const deposit = {
+//         amount:transaction.amount,
+//         lock_duration: investment.trading_liquidity_period, // 30 days lock period for example (can be customized)
+//         deposited_at: new Date(),
+//       };
   
-      if (investment) {
-        // If investment exists, add the deposit to the existing investment
-        investment.deposits.push(deposit);
-        investment.total_funds += transaction.amount;
-        investment.total_deposit += transaction.amount;
-      }
+//       // If investment exists, add the deposit to the existing investment
+//       investment.deposits.push(deposit);
+//       investment.total_funds += transaction.amount;
+//       investment.total_deposit += transaction.amount;
+
+//       await investment.save();
   
-      await investment.save();
-  
-      // Update manager's total funds 
-      const manager = await managerModel.findById(investment.manager);    
-      manager.total_funds += transaction.amount;
+//       // Update manager's total funds 
+//       const manager = await managerModel.findById(investment.manager);    
+//       manager.total_funds += transaction.amount;
       
-      await manager.save();
+//       await manager.save();
 
-      return true
-    } catch (error) {
-      console.log(error);
-      res.status(500).json({ errMsg: 'Server error!', error: error.message });
-    }
-}
+//       return true
+//     } catch (error) {
+//       console.log(error);
+//       res.status(500).json({ errMsg: 'Server error!', error: error.message });
+//     }
+// }
   
 const fetchMyInvestments =async(req,res)=>{
     try {
@@ -315,8 +340,10 @@ const fetchInvestment =async(req,res)=>{
         }
 
         console.log('investment :',investment);
+
+        const lastRollover = await fetchAndUseLatestRollover()
         
-        return res.status(200).json({result : investment})
+        return res.status(200).json({result : investment,rollover : lastRollover})
     } catch (error) {
         console.log(error);
         res.status(500).json({ errMsg: 'Server error!', error: error.message });
@@ -378,7 +405,7 @@ const handleInvestmentWithdrawal = async (req, res) => {
     }
 
     const investment = await investmentModel.findById(investmentId);
-    if (!investment) throw new Error('Investment not found.');
+    if (!investment) return res.status(400).json({ errMsg: 'Investment not found.'})
 
     const { totalRecentDeposits } = getDepositsInLast30TradingDays(investment);
 
@@ -400,6 +427,7 @@ const handleInvestmentWithdrawal = async (req, res) => {
         to : `WALL${user.my_wallets.main_wallet_id}`,
         type: 'withdrawal',
         status: 'pending',
+        transaction_type : 'investment_transactions',
         amount: withdrawalAmount,
         comment: ''
       });
@@ -471,7 +499,7 @@ const handleInvestmentWithdrawal = async (req, res) => {
     }
 
     // Approve the withdrawal
-    await approveInvestmentWithdrawal(withdrawTransaction._id);
+    // await approveInvestmentWithdrawal(withdrawTransaction._id);
 
     console.log('Withdrawal processed successfully.');
     return res.status(200).json({ msg: 'Withdrawal processed successfully.' });
@@ -481,30 +509,34 @@ const handleInvestmentWithdrawal = async (req, res) => {
   }
 };
 
-const approveInvestmentWithdrawal = async (withdrawTransactionId) => {
+const approveWithdrawalTransaction = async (withdrawTransactionId,rollover_id) => {
   try {
-    const withdrawTransaction = await investmentTransactionModel
-      .findById(withdrawTransactionId)
+    const withdrawTransaction = await investmentTransactionModel.findById(withdrawTransactionId)
 
     if (!withdrawTransaction) {
-      throw new Error('Withdrawal transaction not found.');
+      // throw new Error('Withdrawal transaction not found.');
+      console.log('Withdrawal transaction not found.');
+      return false
     }
 
     const { user, investment, amount, deduction = 0, is_deducted } = withdrawTransaction;
 
     const userData = await userModel.findById(user);
     if (!userData) {
-      throw new Error('User not found.');
+      // throw new Error('User not found.');
+      console.log('User not found.');
+      return false
     }
 
     // Calculate amounts using Number() to ensure proper numeric operations
     const performanceFee = Number(deduction);
     const withdrawalAmount = Number(amount);
     let finalAmount = withdrawalAmount;
-
+    console.log('aaaaaaaaaaaaa',finalAmount);
+    
     // Handle performance fee deduction if applicable
     if (performanceFee > 0 && !is_deducted) {
-      finalAmount = withdrawalAmount - performanceFee;
+      finalAmount = Number(withdrawalAmount)-Number(performanceFee);
 
       // Create performance fee deduction transaction
       const feeTransaction = new investmentTransactionModel({
@@ -514,38 +546,45 @@ const approveInvestmentWithdrawal = async (withdrawTransactionId) => {
         type: 'manager_fee',
         status: 'success',
         amount: performanceFee,
+        rollover_id : rollover_id,
         comment: `Performance fee of ${performanceFee} deducted`,
       });
       await feeTransaction.save();
     }
-
+    console.log('bbbbbbbbbbbbb',finalAmount);
+    
     // Update user's wallet
     userData.my_wallets.main_wallet += finalAmount;
 
     // Create user transaction for withdrawal
     const userTransaction = new userTransactionModel({
-      user: user._id,
+      user: userData._id,
       investment: investment._id,
       type: 'deposit',
       status: 'approved',
       from : `INV${investment.inv_id}`,
-      to : `WALL${user.my_wallets.main_wallet_id}`,
+      to : `WALL${userData.my_wallets.main_wallet_id}`,
       amount: finalAmount,
       transaction_id:withdrawTransaction.transaction_id,
-      description: `Withdraw from investment ${investment._id}`,
+      related_transaction : withdrawTransaction._id,
+      description: `Withdraw from investment ${investment.inv_id}`,
+      transaction_type : 'investment_transactions'
     });
 
     withdrawTransaction.status = 'approved'
 
-    await withdrawTransaction.save()
-    await userTransaction.save();
-    await userData.save();
+    await Promise.all([
+      withdrawTransaction.save(),
+      userTransaction.save(),
+      userData.save()
+    ]);
 
+    console.log("ccccccccccc", userData);
     console.log('Withdrawal added to user wallet successfully.');
-    return { success: true, message: 'Withdrawal processed successfully.' };
+    return true
   } catch (error) {
     console.error('Error processing withdrawal:', error.message);
-    return { success: false, message: error.message };
+    return false
   }
 };
 
@@ -567,7 +606,7 @@ const fetchAllInvestmentTransactions=async(req,res)=>{
     const { manager_id ,type} = req.query
     const myInvestmentDeposits = await investmentTransactionModel.find({manager : manager_id,type})
     res.status(200).json({result : myInvestmentDeposits})
-  } catch { 
+  } catch(error) { 
     console.error(error);
     return res.status(500).json({ errMsg: 'Server error!', error: error.message });
   }
@@ -585,7 +624,10 @@ module.exports = {
     handleInvestmentWithdrawal,
     fetchInvestmentTrades,
 
-    //Manager
-    fetchAllInvestmentTransactions
+    //rollover
+    approveDepositTransaction,
+    approveWithdrawalTransaction,
 
+    //Manager
+    fetchAllInvestmentTransactions          
 }

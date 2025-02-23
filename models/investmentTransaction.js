@@ -64,6 +64,10 @@ const transactionSchema = new Schema({
         default: Date.now, 
         index: true 
       },
+      rollover_id : { 
+        type: Schema.Types.ObjectId, 
+        ref: 'rollover' 
+      }
     },
     {
         timestamps: true,

@@ -9,6 +9,7 @@ const depositModel = require('../../models/deposit')
 const rebateTransactionModel = require('../../models/rebateTransaction');
 const managerTradeModel = require('../../models/managerTrades')
 
+
 const {
     forgotMail,
     verification
@@ -53,6 +54,8 @@ const registerUser =async(req,res)=>{
         }
 
         const hashpassword = await bcrypt.hash(password, 10);
+        const userCount = await userModel.countDocuments();
+
         const newUser = new userModel({
             first_name:firstName,
             last_name:lastName,
@@ -62,6 +65,13 @@ const registerUser =async(req,res)=>{
             mobile,
             password:hashpassword,
             date_of_birth:dateOfBirth,
+            user_id : userCount + 11000,
+            my_wallets: {
+                main_wallet_id: 566324+userCount,
+                main_wallet: 0.00, 
+                rebate_wallet_id:253664+userCount,
+                rebate_wallet: 0.00 
+            }
         });
         await newUser.save();
         res.status(201).json({ msg: 'User registered successfully' });
@@ -135,10 +145,12 @@ const fetchUserTransactions = async (req, res) => {
             ? new Date(new Date(sanitizedFilters.created_at_to).setUTCHours(23, 59, 59, 999)) 
             : null;
 
+        const user_id = new mongoose.Types.ObjectId(filters.user_id);
+
         const pipeline = [
             {
                 $match: {
-                    
+                    user : user_id,
                     ...(createdAtFrom && createdAtTo && {
                         createdAt: {
                             $gte: createdAtFrom,
