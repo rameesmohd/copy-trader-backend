@@ -560,7 +560,7 @@ const approveWithdrawalTransaction = async (withdrawTransactionId,rollover_id) =
     const userTransaction = new userTransactionModel({
       user: userData._id,
       investment: investment._id,
-      type: 'deposit',
+      type: 'transfer',
       status: 'approved',
       from : `INV${investment.inv_id}`,
       to : `WALL${userData.my_wallets.main_wallet_id}`,

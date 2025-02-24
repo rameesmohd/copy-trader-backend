@@ -23,7 +23,9 @@ const fetchAndUseLatestRollover = async () => {
 const fetchAndApprovePendingInvestmentTransactions=async(rollover_id)=>{
     const pendingDepositTransactions = await investmentTransactionModel.find({ status: "pending",type : "deposit" })
     const pendingWithdrawTransactions = await investmentTransactionModel.find({ status: "pending",type : "withdrawal" })
-
+    
+    await rollOverTradeDistribution(rollover_id)
+    
     for (let transaction of pendingDepositTransactions) {
         await approveDepositTransaction(transaction._id,rollover_id)
     }
@@ -32,7 +34,6 @@ const fetchAndApprovePendingInvestmentTransactions=async(rollover_id)=>{
         await approveWithdrawalTransaction(transaction._id,rollover_id)
     }
 
-    await rollOverTradeDistribution(rollover_id)
 }
 
 

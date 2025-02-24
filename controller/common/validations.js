@@ -59,7 +59,8 @@ const loginSchema = Joi.object({
     'string.min': 'Password should have at least 8 characters',
     'string.empty': 'Password is required',
   }),
-  trading_account: Joi.string().allow('').optional()
+  provider_account: Joi.string().allow('').optional(),
+  provider_pass: Joi.string().allow('').optional(),
 });
 
 const validateLogin = (input) => {

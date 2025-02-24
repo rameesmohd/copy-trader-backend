@@ -5,8 +5,13 @@ const  { intervalInvestmentHandle } = require('../controller/intervalController'
 const {fetchInvestmentTransactions,fetchInvestmentTrades}=require('../controller/investmentController');
 const { fetchUser } = require('../controller/user/userController');
 const { fetchAllInvestmentTransactions } = require('../controller/investmentController')
-
+const {login} = require('../controller/manager/managerController')
 const router = express.Router();
+const { verifyToken } = require('../middleware/managerAuth')
+
+router.post('/login',login)
+
+router.use(verifyToken)
 
 router.route('/manager')
         .get(getManagerData)
