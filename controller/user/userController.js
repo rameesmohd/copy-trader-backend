@@ -176,6 +176,7 @@ const fetchUserTransactions = async (req, res) => {
 
 const { Resend } = require("resend");
 const ticketModel = require('../../models/tickets');
+const forgetPasswordModel = require('../../models/forgetpassword');
 const resend = new Resend(process.env.RESEND_SECRET_KEY);
 const randomSixDigitNumber = Math.floor(100000 + Math.random() * 900000);
 
@@ -319,6 +320,96 @@ const fetchManagerOrderHistory=async(req,res)=>{
     }
 }
 
+const forgetPassGenerateOTP=async(req,res)=>{
+    try {
+        const {email} = req.query
+        const user = await userModel.findOne({email})
+        if(!user) { 
+            return res.status(400).json({ errMsg: "User not found. Please sign up to continue!" });
+        }
+        const generateOTP = (() => Math.floor(100000 + Math.random() * 900000))()
+        try {
+            await resend.emails.send({
+              from: process.env.WEBSITE_MAIL,
+              to: user.email,
+              subject:"Verify email",
+              html: verification(OTP=generateOTP,user.first_name),
+            });
+        } catch (emailError) {
+            console.error("Error sending email:", emailError);
+            return res
+                .status(500)
+                .json({ errMsg: "Failed to send verification email. Please try again!" });
+        }
+        const newOtp = forgetPasswordModel({
+            user : user._id,
+            otp : generateOTP
+        })
+        await newOtp.save()
+        return res.status(200).json({otp_id: newOtp._id,msg: "Otp sent successfully" });    
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({errMsg : 'sever side error', error: error.message})
+    }
+}
+
+const validateForgetOTP=async(req,res)=>{
+    try {
+        const { id,otp } = req.body
+        const forgetPassOtp = await forgetPasswordModel.findOne({_id : id})
+        if(forgetPassOtp){
+            if(forgetPassOtp.otp==otp) { 
+                return res.status(200).json({msg : "OTP verification successful"})
+            }
+            return res.status(400).json({errMsg : "Incurrect OTP!"})
+        }
+        return res.status(400).json({errMsg : "OTP timeout, please try again"})
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({errMsg : 'sever side error', error: error.message})
+    }
+}
+
+const resetPassword = async (req, res) => {
+    try {
+        const { otp, id, newPassword } = req.body;
+
+        // Validate password length
+        if (!newPassword || newPassword.length < 8) {
+            return res.status(400).json({ errMsg: "Password is too short! It must be at least 8 characters long." });
+        }
+
+        // Find OTP entry
+        const forgetData = await forgetPasswordModel.findOne({ _id: id });
+
+        if (!forgetData) {
+            return res.status(400).json({ errMsg: "Session timeout, please try again!" });
+        }
+
+        // Check if OTP is expired
+        if (forgetData.expiresAt && forgetData.expiresAt < new Date()) {
+            return res.status(400).json({ errMsg: "OTP expired, please request a new one!" });
+        }
+
+        // Validate OTP
+        if (forgetData.otp !== otp) {
+            return res.status(400).json({ errMsg: "Invalid OTP!" });
+        }
+
+        // Hash new password
+        const hashpassword = await bcrypt.hash(newPassword, 10);
+
+        // Update user's password
+        await userModel.updateOne({ _id: forgetData.user }, { $set: { password: hashpassword } });
+
+        return res.status(200).json({ msg: "Password changed successfully!" });
+
+    } catch (error) {
+        console.error("Error resetting password:", error);
+        return res.status(500).json({ errMsg: "Server error, please try again later.", error: error.message });
+    }
+};
+
 module.exports = {
     fetchUser,
     registerUser,
@@ -330,5 +421,8 @@ module.exports = {
     submitTicket,
     fetchTickets,
     fetchRebateTransactions,
-    fetchManagerOrderHistory
+    fetchManagerOrderHistory,
+    forgetPassGenerateOTP,
+    validateForgetOTP,
+    resetPassword
 }

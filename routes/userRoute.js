@@ -12,7 +12,10 @@ const {
     submitTicket,
     fetchTickets,
     fetchRebateTransactions,
-    fetchManagerOrderHistory
+    fetchManagerOrderHistory,
+    forgetPassGenerateOTP,
+    validateForgetOTP,
+    resetPassword
 }=require('../controller/user/userController')
 const {
     makeDeposit, 
@@ -47,12 +50,17 @@ router.post('/upload', upload.single('file'), (req, res) => {
 });
 
 router.route('/register')
-.post(registerUser)
+    .post(registerUser)
 
 router.route('/login')
-.post(login)
+    .post(login)
 
 router.get('/countries',fetchCountryList)
+
+router.route('/forget-password')
+    .get(forgetPassGenerateOTP)
+    .post(validateForgetOTP)
+    .patch(resetPassword)
 
 //<<-----------Auth middleware----------->>
 router.use(verifyToken)
