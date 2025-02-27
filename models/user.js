@@ -103,34 +103,61 @@ const userSchema = new mongoose.Schema({
   my_wallets: {
     main_wallet_id : {
       type: String,
-      default: () => Math.random().toString(36).substring(2, 10).toUpperCase() 
+      default: () => Math.random().toString(36).substring(2, 10).toUpperCase(),
+      unique: true, 
     },
     main_wallet: {
       type : Number,
       default : 0.00,
-      set: twoDecimalPlaces
+      set: twoDecimalPlaces,
+      min: 0
     },
     rebate_wallet_id : {
       type: String,
       default: () => Math.random().toString(36).substring(2, 10).toUpperCase(),
-      index: true  
+      index: true,
+      unique: true
     },
     rebate_wallet: {
       type : Number,
       default : 0.00,
-      set: twoDecimalPlaces
+      set: twoDecimalPlaces,
+      min: 0
     },
   },
   referral : {
     total_earned_commission : {
       type : Number,
       default : 0.00,
-      set: twoDecimalPlaces
+      set: twoDecimalPlaces,
+      min: 0
     },
     total_referrals : {
       type : Number,
-      default : 0
-    }
+      default : 0,
+      min: 0
+    },
+    referred_by: { 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: "users",
+      default: null 
+    },
+    referrals: [{ 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: "users" }
+    ],
+    investments: [
+      {
+        investment_id : { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: "investments" },
+        rebate_recieved : {
+          type : Number,
+          default : 0,
+          set: twoDecimalPlaces,
+        }
+      }
+    ]
   },
   createdAt: { 
     type: Date, 

@@ -37,7 +37,7 @@ const ticketSchema = new Schema({
       default: () => Math.random().toString(36).substring(2, 10).toUpperCase() 
     },
     uploads : {
-        type : [String],
+        type : [],
         required: false 
     },
     createdAt: { 

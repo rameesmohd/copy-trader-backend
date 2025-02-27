@@ -90,8 +90,9 @@ router.get('/rebate-history',fetchRebateTransactions)
 
 router.get('/trades',fetchInvestmentTrades)
 
+
 router.route('/ticket')
-        .post( upload.array('upload'),submitTicket)
+        .post(upload.array('upload',5),submitTicket)
         .get(fetchTickets)
 
 //----------------------kyc----------------------------------------

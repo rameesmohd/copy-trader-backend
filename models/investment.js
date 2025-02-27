@@ -67,7 +67,7 @@ const investmentSchema = new mongoose.Schema(
     performance_fee_paid: { type: Number, default: 0 ,set: truncateToTwoDecimals},
     performance_fee_projected: { type: Number, default: 0 ,set: truncateToTwoDecimals},//current interval performance fee pending
 
-    inviter : {type : String, required : false},
+    inviter : {type: Schema.Types.ObjectId, ref: 'users'},
 
     last_rollover: { type: mongoose.Schema.Types.ObjectId, ref: "rollover" }, // Tracks last applied rollover
   },

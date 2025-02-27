@@ -4,6 +4,7 @@ const envFile = `.env.${process.env.NODE_ENV || 'development'}`;
 dotenv.config({ path: envFile });
 const cors = require('cors');
 const connectDB = require('./config/mongoose')
+const bodyParser = require("body-parser");
 const app = express();
 const helmet = require('helmet');
 const userRoute = require('./routes/userRoute')
@@ -49,12 +50,11 @@ const corsOptions = {
   optionsSuccessStatus: 204,
 };
 
-app.use(cors(corsOptions));
-app.use(express.json())
-app.use(express.urlencoded({extended: true}))
-require('./cronjobs/cronRollover')
-
-
+app.use(cors()); 
+app.use(express.json()); 
+app.use(bodyParser.urlencoded({ extended: true, limit: '6mb' }))
+app.use(bodyParser.json()); 
+// require('./cronjobs/cronRollover')
 
 app.use('/master',masterRoute)
 app.use('/manager',managerRoute)
@@ -66,6 +66,8 @@ app.use((err, req, res, next) => {
   if (err.message === 'Not allowed by CORS') {
     res.status(403).send('CORS policy does not allow access from this origin');
   } else {
+    console.log("App global err : ", err  );
+    
     res.status(500).send('Something broke!');
   }
 });

@@ -31,6 +31,7 @@ const registerSchema = Joi.object({
   accountType: Joi.string().optional().allow(''),
   platform: Joi.string().optional().allow(''),
   leverage: Joi.string().optional().allow(''),
+  referral: Joi.string().optional().allow(''),
   password: Joi.string().min(8).required().messages({
     'string.min': 'Password should have at least 8 characters',
     'string.empty': 'Password is required',

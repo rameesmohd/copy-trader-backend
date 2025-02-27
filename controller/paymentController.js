@@ -183,7 +183,7 @@ const trc20CheckAndTransferPayment = async (req,res) => {
         }
         return res.status(200).json({ status: 'failure', message: 'Payment not completed.' });
     } catch (error) {
-        if (error.response) {
+        if (error.response) {   
             console.error('Error response data:', error.response.data);
             console.error('Error response status:', error.response.status);
             console.error('Error response headers:', error.response.headers);

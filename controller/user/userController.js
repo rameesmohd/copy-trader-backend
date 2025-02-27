@@ -46,6 +46,7 @@ const registerUser =async(req,res)=>{
             mobile,
             dateOfBirth,
             password,
+            referral
         } = req.body
 
         const isAlreadyRegistered = await userModel.findOne({email})
@@ -57,23 +58,43 @@ const registerUser =async(req,res)=>{
         const userCount = await userModel.countDocuments();
 
         const newUser = new userModel({
-            first_name:firstName,
-            last_name:lastName,
+            first_name: firstName,
+            last_name: lastName,
             email,
             country,
-            country_code:countryCode,
+            country_code: countryCode,
             mobile,
-            password:hashpassword,
-            date_of_birth:dateOfBirth,
-            user_id : userCount + 11000,
+            password: hashpassword,
+            date_of_birth: dateOfBirth,
+            user_id: userCount + 11000,
             my_wallets: {
-                main_wallet_id: 566324+userCount,
+                main_wallet_id: 566324 + userCount,
                 main_wallet: 0.00, 
-                rebate_wallet_id:253664+userCount,
+                rebate_wallet_id: 253664 + userCount,
                 rebate_wallet: 0.00 
             }
         });
+        
+        if (referral) {
+            const referredBy = await userModel.findOne({ user_id: referral });
+        
+            if (referredBy) {
+                newUser.referral.referred_by = referredBy._id; 
+            }
+        }
+        
         await newUser.save();
+        
+        if (newUser.referral.referred_by) {
+            await userModel.findByIdAndUpdate(
+                newUser.referral.referred_by,
+                {
+                    $inc: { "referral.total_referrals": 1 },
+                    $push: { "referral.referrals": newUser._id }
+                }
+            );
+        }
+
         res.status(201).json({ msg: 'User registered successfully' });
       } catch (error) {
         res.status(500).json({ errMsg: 'Error registering user', error: error.message });
@@ -256,12 +277,11 @@ const handleKycProofSubmit=async(req,res)=>{
 }
 
 const submitTicket=async(req,res)=>{
+    console.log("Received Request Headers:", req.headers);
+    console.log("Received Body:", req.body);
+    console.log("Received Files:", req.files);
     try {
-    
-        console.log("ssssssssssss",req.files); 
-        console.log(req.body);
-
-        const { category, describe, user_id } = req.body;
+        const { category, description, user_id } = req.body;
 
         const user = userModel.findOne({_id:user_id})
         if(!user){
@@ -272,8 +292,8 @@ const submitTicket=async(req,res)=>{
         const ticketData = {
             user_id,
             category,
-            describe,
-            upload: uploadedFiles, // Array of Cloudinary URLs
+            description,
+            uploads: uploadedFiles,
         };
 
         const ticket = await ticketModel.create(ticketData);
@@ -298,6 +318,8 @@ const fetchTickets = async(req,res)=>{
 
 const fetchRebateTransactions=async(req,res)=>{
     try {
+        console.log(req.decodedUser);
+        
         const _id =new mongoose.Types.ObjectId(req.decodedUser._id);
         
         const data = await rebateTransactionModel.find({user : _id})
@@ -325,7 +347,7 @@ const forgetPassGenerateOTP=async(req,res)=>{
         const {email} = req.query
         const user = await userModel.findOne({email})
         if(!user) { 
-            return res.status(400).json({ errMsg: "User not found. Please sign up to continue!" });
+            return res.status(404).json({ errMsg: "User not found. Please sign up to continue!" });
         }
         const generateOTP = (() => Math.floor(100000 + Math.random() * 900000))()
         try {
@@ -346,7 +368,7 @@ const forgetPassGenerateOTP=async(req,res)=>{
             otp : generateOTP
         })
         await newOtp.save()
-        return res.status(200).json({otp_id: newOtp._id,msg: "Otp sent successfully" });    
+        return res.status(200).json({   otp_id: newOtp._id,msg: "Otp sent successfully" });    
     } catch (error) {
         console.log(error);
         res.status(500).json({errMsg : 'sever side error', error: error.message})
