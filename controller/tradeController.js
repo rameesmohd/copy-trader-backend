@@ -1,3 +1,4 @@
+const { default: mongoose } = require('mongoose');
 const investmentModel = require('../models/investment');
 const investorTradeModel = require('../models/investorTrades');
 const managerModel = require('../models/manager')
@@ -189,27 +190,249 @@ const getDailyGrowthData = async (managerId) => {
 //     }
 // };
 
+// const rollOverTradeDistribution = async (rollover_id) => {
+//   try {
+//       // Fetch undistributed trades
+//       const unDistributedTrades = await managerTradeModel.find({ is_distributed: false });
+
+//       // Process each trade asynchronously
+//       for (const trade of unDistributedTrades) {
+//           const tradeProfit = trade.manager_profit || 0; // Default to 0 if undefined
+
+//           const manager = await managerModel.findOne({ _id: trade.manager });
+//           if (!manager) {
+//               console.warn(`Manager not found for trade ${trade._id}`);
+//               continue;
+//           }
+
+//           // Update manager's profits
+//           manager.closed_trade_profit += tradeProfit;
+//           manager.total_trade_profit += tradeProfit;
+
+//           // Fetch all investments for the manager
+//           const investments = await investmentModel.find({ manager: manager._id });
+//           const totalFunds = investments.reduce((sum, inv) => sum + (inv.total_funds || 0), 0);
+
+//           if (totalFunds === 0) {
+//               console.warn(`Manager ${manager._id} has no funds to distribute.`);
+//               continue;
+//           }
+
+//           // Distribute the profit proportionally to each investment
+//           await Promise.all(
+//               investments.map(async (investment) => {
+//                   const investorProfit = Number(((investment.total_funds / totalFunds) * tradeProfit).toFixed(2));
+
+//                   // Update investment profits
+//                   investment.current_interval_profit += investorProfit;
+//                   investment.current_interval_profit_equity += investorProfit;
+//                   investment.total_trade_profit += investorProfit;
+//                   investment.closed_trade_profit += investorProfit;
+
+//                   const performanceFee = (investorProfit * (investment.manager_performance_fee || 0)) / 100;
+//                   investment.performance_fee_projected += performanceFee;
+
+//                   // Create trade history
+//                   const investorTradeHistory = new investorTradeModel({
+//                       investment: investment._id,
+//                       manager: manager._id,
+//                       manager_trade: trade._id,
+//                       type: trade.type,
+//                       symbol: trade.symbol,
+//                       manager_volume: trade.manager_volume,
+//                       open_price: trade.open_price,
+//                       close_price: trade.close_price,
+//                       swap: trade.swap,
+//                       open_time: trade.open_time,
+//                       close_time: trade.close_time,
+//                       manager_profit: trade.manager_profit,
+//                       investor_profit: investorProfit,
+//                       rollover_id : rollover_id
+//                   });
+//                   await investorTradeHistory.save();
+//                   await investment.save();
+//               })
+//           );
+
+//           // Mark the trade as distributed after processing all investments
+//           trade.is_distributed = true;
+//           await trade.save();
+
+//           // Aggregation for trades
+//           const trades = await managerTradeModel.aggregate([
+//               { $match: { manager: manager._id } },
+//               { $group: { _id: '$symbol', totalProfit: { $sum: '$manager_profit' }, tradeCount: { $sum: 1 } } },
+//               { $project: { _id: 0, label: '$_id', value: { $round: ['$totalProfit', 2] }, tradeCount: 1 } },
+//           ]);
+
+//           const dailyGrowthData = await getDailyGrowthData(manager._id);
+//           console.log("Trades chart growth data:", dailyGrowthData);
+//           console.log("Trades symbol percentage:", trades);
+          
+//           // Save manager updates
+//           await manager.save();
+//       }
+//       // return res.status(200).json({ msg: 'Profit distributed successfully' });
+//       return true
+//   } catch (error) {
+//       console.error('Error in trade distribution:', error);
+//       // res.status(500).json({ errMsg: 'Server side error', error: error.message });
+//       return false
+//   }
+// };
+
+// const rollOverTradeDistribution = async (rollover_id) => {
+//   try {
+//     // Fetch undistributed trades
+//     const unDistributedTrades = await managerTradeModel.find({ is_distributed: false });
+
+//     if (unDistributedTrades.length === 0) {
+//       console.log("No undistributed trades found.");
+//       return true;
+//     }
+
+//     const bulkInvestmentUpdates = [];
+//     const bulkInvestorTradeInserts = [];
+//     const bulkTradeUpdates = [];
+//     const bulkManagerUpdates = [];
+
+//     for (const trade of unDistributedTrades) {
+//       const tradeProfit = trade.manager_profit || 0;
+
+//       const manager = await managerModel.findById(trade.manager);
+//       if (!manager) {
+//         console.warn(`Manager not found for trade ${trade._id}`);
+//         continue;
+//       }
+
+//       // Update manager profits
+//       manager.closed_trade_profit += tradeProfit;
+//       manager.total_trade_profit += tradeProfit;
+
+//       const investments = await investmentModel.find({ manager: manager._id });
+//       const totalFunds = investments.reduce((sum, inv) => sum + (inv.total_funds || 0), 0);
+
+//       if (totalFunds === 0) {
+//         console.warn(`Manager ${manager._id} has no funds to distribute.`);
+//         continue;
+//       }
+
+//       for (const investment of investments) {
+//         const investorProfit = Number(((investment.total_funds / totalFunds) * tradeProfit).toFixed(2));
+//         const performanceFee = (investorProfit * (investment.manager_performance_fee || 0)) / 100;
+
+//         // Update investment profits
+//         bulkInvestmentUpdates.push({
+//           updateOne: {
+//             filter: { _id: investment._id },
+//             update: {
+//               $inc: {
+//                 current_interval_profit: investorProfit,
+//                 current_interval_profit_equity: investorProfit,
+//                 total_trade_profit: investorProfit,
+//                 closed_trade_profit: investorProfit,
+//                 performance_fee_projected: performanceFee,
+//               },
+//             },
+//           },
+//         });
+
+//         // Add investor trade history
+//         bulkInvestorTradeInserts.push({
+//           investment: investment._id,
+//           manager: manager._id,
+//           manager_trade: trade._id,
+//           type: trade.type,
+//           symbol: trade.symbol,
+//           manager_volume: trade.manager_volume,
+//           open_price: trade.open_price,
+//           close_price: trade.close_price,
+//           swap: trade.swap,
+//           open_time: trade.open_time,
+//           close_time: trade.close_time,
+//           manager_profit: trade.manager_profit,
+//           investor_profit: investorProfit,
+//           rollover_id: rollover_id,
+//         });
+//       }
+
+//       // Mark the trade as distributed
+//       bulkTradeUpdates.push({
+//         updateOne: {
+//           filter: { _id: trade._id },
+//           update: { is_distributed: true },
+//         },
+//       });
+
+//       // Queue manager update
+//       bulkManagerUpdates.push({
+//         updateOne: {
+//           filter: { _id: manager._id },
+//           update: {
+//             $inc: {
+//               closed_trade_profit: tradeProfit,
+//               total_trade_profit: tradeProfit,
+//             },
+//           },
+//         },
+//       });
+//     }
+
+//     // Execute bulk database operations in parallel
+//     await Promise.all([
+//       investmentModel.bulkWrite(bulkInvestmentUpdates),
+//       investorTradeModel.insertMany(bulkInvestorTradeInserts),
+//       managerTradeModel.bulkWrite(bulkTradeUpdates),
+//       managerModel.bulkWrite(bulkManagerUpdates),
+//     ]);
+
+//     console.log("Trade distribution completed successfully.");
+//     return true;
+//   } catch (error) {
+//     console.error("Error in trade distribution:", error);
+//     return false;
+//   }
+// };
+
+const truncateToTwoDecimals = (num) => {
+    return Math.floor(num * 100) / 100;
+  };
+  
+
 const rollOverTradeDistribution = async (rollover_id) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
-      // Fetch undistributed trades
-      const unDistributedTrades = await managerTradeModel.find({ is_distributed: false });
+    // Fetch undistributed trades
+    const unDistributedTrades = await managerTradeModel.find({ is_distributed: false }).session(session);
 
-      // Process each trade asynchronously
-      for (const trade of unDistributedTrades) {
-          const tradeProfit = trade.manager_profit || 0; // Default to 0 if undefined
+    if (unDistributedTrades.length === 0) {
+        console.log("No undistributed trades found.");
+        await session.commitTransaction();
+        session.endSession();
+        return true;
+    }
 
-          const manager = await managerModel.findOne({ _id: trade.manager });
+    const bulkInvestmentUpdates = [];
+    const bulkInvestorTradeInserts = [];
+    const bulkTradeUpdates = [];
+    const bulkManagerUpdates = [];
+
+    for (const trade of unDistributedTrades) {
+          const tradeProfit = trade.manager_profit || 0;
+
+          const manager = await managerModel.findById(trade.manager).session(session);
           if (!manager) {
               console.warn(`Manager not found for trade ${trade._id}`);
               continue;
           }
 
-          // Update manager's profits
+          // Update manager profits
           manager.closed_trade_profit += tradeProfit;
           manager.total_trade_profit += tradeProfit;
 
-          // Fetch all investments for the manager
-          const investments = await investmentModel.find({ manager: manager._id });
+          const investments = await investmentModel.find({ manager: manager._id }).session(session);
           const totalFunds = investments.reduce((sum, inv) => sum + (inv.total_funds || 0), 0);
 
           if (totalFunds === 0) {
@@ -217,66 +440,109 @@ const rollOverTradeDistribution = async (rollover_id) => {
               continue;
           }
 
-          // Distribute the profit proportionally to each investment
-          await Promise.all(
-              investments.map(async (investment) => {
-                  const investorProfit = Number(((investment.total_funds / totalFunds) * tradeProfit).toFixed(2));
+          for (const investment of investments) {
 
-                  // Update investment profits
-                  investment.current_interval_profit += investorProfit;
-                  investment.current_interval_profit_equity += investorProfit;
-                  investment.total_trade_profit += investorProfit;
-                  investment.closed_trade_profit += investorProfit;
+              if(investment.total_funds < 1){
+                console.warn(`Skipping investment due to no funds ${investment._id}`);
+                continue;
+              }
 
-                  const performanceFee = (investorProfit * (investment.manager_performance_fee || 0)) / 100;
-                  investment.performance_fee_projected += performanceFee;
+              const investorProfit = truncateToTwoDecimals(Number(((investment.total_funds / totalFunds) * tradeProfit)))
+              const performanceFee = truncateToTwoDecimals(Number((investorProfit * (investment.manager_performance_fee || 0)) / 100))
 
-                  // Create trade history
-                  const investorTradeHistory = new investorTradeModel({
-                      investment: investment._id,
-                      manager: manager._id,
-                      manager_trade: trade._id,
-                      type: trade.type,
-                      symbol: trade.symbol,
-                      manager_volume: trade.manager_volume,
-                      open_price: trade.open_price,
-                      close_price: trade.close_price,
-                      swap: trade.swap,
-                      open_time: trade.open_time,
-                      close_time: trade.close_time,
-                      manager_profit: trade.manager_profit,
-                      investor_profit: investorProfit,
-                      rollover_id : rollover_id
-                  });
-                  await investorTradeHistory.save();
-                  await investment.save();
-              })
-          );
+              if(investorProfit>0){                 
+              // Update investment profits
+              bulkInvestmentUpdates.push({
+                  updateOne: {
+                      filter: { _id: investment._id },
+                      update: {
+                          $inc: {
+                              current_interval_profit: investorProfit,
+                              current_interval_profit_equity: investorProfit,
+                              total_trade_profit: investorProfit,
+                              closed_trade_profit: investorProfit,
+                              performance_fee_projected: performanceFee,
+                          },
+                      },
+                  },
+              });
 
-          // Mark the trade as distributed after processing all investments
-          trade.is_distributed = true;
-          await trade.save();
+              // Add investor trade history
+              bulkInvestorTradeInserts.push({
+                  investment: investment._id,
+                  manager: manager._id,
+                  manager_trade: trade._id,
+                  type: trade.type,
+                  symbol: trade.symbol,
+                  manager_volume: trade.manager_volume,
+                  open_price: trade.open_price,
+                  close_price: trade.close_price,
+                  swap: trade.swap,
+                  open_time: trade.open_time,
+                  close_time: trade.close_time,
+                  manager_profit: trade.manager_profit,
+                  investor_profit: investorProfit,
+                  rollover_id: rollover_id,
+                });
+            }
+        }
 
-          // Aggregation for trades
-          const trades = await managerTradeModel.aggregate([
-              { $match: { manager: manager._id } },
-              { $group: { _id: '$symbol', totalProfit: { $sum: '$manager_profit' }, tradeCount: { $sum: 1 } } },
-              { $project: { _id: 0, label: '$_id', value: { $round: ['$totalProfit', 2] }, tradeCount: 1 } },
-          ]);
+          // Mark the trade as distributed
+          bulkTradeUpdates.push({
+              updateOne: {
+                  filter: { _id: trade._id },
+                  update: { is_distributed: true },
+              },
+          });
 
-          const dailyGrowthData = await getDailyGrowthData(manager._id);
-          console.log("Trades chart growth data:", dailyGrowthData);
-          console.log("Trades symbol percentage:", trades);
-          
-          // Save manager updates
-          await manager.save();
+          if (tradeProfit > 0) {
+              // Queue manager update
+              bulkManagerUpdates.push({
+              updateOne: {
+                  filter: { _id: manager._id },
+                  update: {
+                      $inc: {
+                          closed_trade_profit: truncateToTwoDecimals(tradeProfit),
+                          total_trade_profit: truncateToTwoDecimals(tradeProfit),
+                        },
+                    },
+                },
+            });
+        }
+    }
+
+      // Execute bulk database operations **inside the transaction**
+      if (bulkInvestmentUpdates.length) {
+          const investmentResult = await investmentModel.bulkWrite(bulkInvestmentUpdates, { session });
+          console.log("Investment bulk update result:", investmentResult);
       }
-      // return res.status(200).json({ msg: 'Profit distributed successfully' });
-      return true
+
+      if (bulkInvestorTradeInserts.length) {
+          const investorTradeResult = await investorTradeModel.insertMany(bulkInvestorTradeInserts, { session });
+          console.log("Investor trade insert result:", investorTradeResult.length, "documents inserted.");
+      }
+
+      if (bulkTradeUpdates.length) {
+          const tradeUpdateResult = await managerTradeModel.bulkWrite(bulkTradeUpdates, { session });
+          console.log("Trade bulk update result:", tradeUpdateResult);
+      }
+
+      if (bulkManagerUpdates.length) {
+          const managerUpdateResult = await managerModel.bulkWrite(bulkManagerUpdates, { session });
+          console.log("Manager bulk update result:", managerUpdateResult);
+      }
+
+      // Commit the transaction
+      await session.commitTransaction();
+      session.endSession();
+
+      console.log("Trade distribution completed successfully.");
+      return true;
   } catch (error) {
-      console.error('Error in trade distribution:', error);
-      // res.status(500).json({ errMsg: 'Server side error', error: error.message });
-      return false
+      await session.abortTransaction();
+      session.endSession();
+      console.error("Error in trade distribution:", error);
+      return false;
   }
 };
 

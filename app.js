@@ -54,7 +54,7 @@ app.use(cors());
 app.use(express.json()); 
 app.use(bodyParser.urlencoded({ extended: true, limit: '6mb' }))
 app.use(bodyParser.json()); 
-// require('./cronjobs/cronRollover')
+require('./cronjobs/cronRollover')
 
 app.use('/master',masterRoute)
 app.use('/manager',managerRoute)

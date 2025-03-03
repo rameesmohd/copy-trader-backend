@@ -2,93 +2,403 @@ const managerModel = require('../models/manager');
 const investmentModel = require('../models/investment');
 const investmentTransactionModel = require('../models/investmentTransaction');
 const userModel = require('../models/user')
-const rebateTransactionModel = require('../models/rebateTransaction')
+const rebateTransactionModel = require('../models/rebateTransaction');
+const { default: mongoose } = require('mongoose');
+
+// const intervalInvestmentHandle = async (req, res) => {
+//     try {
+//         // Fetch all managers
+//         const managers = await managerModel.find({trading_interval:'weekly'});
+
+//         // Process each manager
+//         for (const manager of managers) {
+//             // Fetch all investments for the manager
+//             const investments = await investmentModel.find({ manager: manager._id });
+
+//             for (const investment of investments) {
+//                 // Calculate the amount to be added to total funds
+//                 const netIntervalProfit = investment.current_interval_profit_equity - investment.performance_fee_projected;
+
+//                 // Update investment's total funds and net profit
+//                 investment.total_funds += netIntervalProfit;
+//                 investment.net_profit += netIntervalProfit;
+
+//                 // Update manager's performance fee and investment's fee tracking
+//                 let adjustedPerformanceFee =investment.performance_fee_projected
+
+//                 if (investment.inviter) {
+//                     const inviter = await userModel.findOne({ user_id: investment.inviter });
+//                     if (inviter && investment.performance_fee_projected > 0) {
+//                         // Calculate inviter's share (5% of total profit)
+//                         const inviterShare = investment.current_interval_profit_equity * 0.05;
+                
+//                         // Update inviter's wallets and commission tracking
+//                         inviter.my_wallets.rebate_wallet += inviterShare;
+//                         inviter.referral.total_earned_commission += inviterShare;
+//                         await inviter.save();
+
+//                         const rebateTransaction = new rebateTransactionModel({
+//                             user : inviter._id,
+//                             investment : investment._id,
+//                             type : 'commission',
+//                             status : 'approved',
+//                             amount : inviterShare , 
+//                             description : `Weekly commission distribution.`,
+//                         })
+//                         await rebateTransaction.save()
+                        
+//                         // Adjust the performance fee by deducting the inviter's share
+//                         adjustedPerformanceFee = Math.max(0, investment.performance_fee_projected - inviterShare);
+//                     }
+//                 }
+                
+//                 manager.total_performance_fee_collected += adjustedPerformanceFee;
+//                 investment.performance_fee_paid += investment.performance_fee_projected;
+
+//                 // Reset performance fee projections and profits
+//                 investment.performance_fee_projected = 0;
+//                 investment.current_interval_profit_equity = 0;
+//                 investment.current_interval_profit = 0;
+
+//                 // Create a performance fee deduction transaction
+//                 const feeTransaction = new investmentTransactionModel({
+//                     user: investment.user,
+//                     investment: investment._id,
+//                     type: 'manager_fee',
+//                     status: 'success',
+//                     amount: investment.performance_fee_paid, // Use correct value
+//                     comment: `Performance fee of ${investment.performance_fee_paid} deducted`,
+//                 });
+
+//                 // Save investment and fee transaction
+//                 await investment.save();
+//                 await feeTransaction.save();
+
+//                 console.log(`Handled current interval profit of ${netIntervalProfit} for investment ${investment._id}`);
+//             }
+
+//             // Save the manager with updated performance fee
+//             await manager.save();
+//         }
+
+//         res.status(200).json({ message: 'Interval investment handling completed successfully' });
+//     } catch (error) {
+//         console.error('Error in interval investment handling:', error);
+//         res.status(500).json({ errMsg: 'Server side error', error: error.message });
+//     }
+// };
+  
+
+// const intervalInvestmentHandle = async (req, res) => {
+//     const session = await mongoose.startSession();
+//     session.startTransaction();
+
+//     try {
+//         // Fetch all managers with trading interval "weekly"
+//         const managers = await managerModel.find({ trading_interval: 'weekly' }).session(session);
+
+//         // Fetch all investments in bulk
+//         const managerIds = managers.map(m => m._id);
+//         const investments = await investmentModel.find({ manager: { $in: managerIds } }).session(session);
+
+//         // Prepare bulk update operations
+//         const investmentUpdates = [];
+//         const managerUpdates = [];
+//         const feeTransactions = [];
+//         const rebateTransactions = [];
+//         const inviterUpdates = [];
+
+//         // Process investments
+//         for (const investment of investments) {
+//             const netIntervalProfit = investment.current_interval_profit_equity - investment.performance_fee_projected;
+//             let adjustedPerformanceFee = investment.performance_fee_projected;
+//             let inviterShare = 0;
+
+//             // If inviter exists, calculate and store updates
+//             if (investment.referred_by) {
+//                 const inviter = await userModel.findOne({ user_id: investment.referred_by }).session(session);
+//                 if (inviter && investment.performance_fee_projected > 0) {
+//                     inviterShare = investment.current_interval_profit_equity * 0.05;
+//                     adjustedPerformanceFee -= inviterShare;
+
+//                     // Store inviter updates
+//                     inviterUpdates.push({
+//                         updateOne: {
+//                             filter: { _id: inviter._id },
+//                             update: {
+//                                 $inc: {
+//                                     "my_wallets.rebate_wallet": inviterShare,
+//                                     "referral.total_earned_commission": inviterShare
+//                                 }
+//                             }
+//                         }
+//                     });
+
+//                     // Store rebate transaction
+//                     rebateTransactions.push({
+//                         user: inviter._id,
+//                         investment: investment._id,
+//                         type: 'commission',
+//                         status: 'approved',
+//                         amount: inviterShare,
+//                         description: `Weekly commission distribution.`,
+//                     });
+//                 }
+//             }
+
+//             // Ensure performance fee is properly tracked
+//             const performanceFeePaid = investment.performance_fee_projected;
+
+//             // Prepare investment updates
+//             investmentUpdates.push({
+//                 updateOne: {
+//                     filter: { _id: investment._id },
+//                     update: {
+//                         $inc: {
+//                             total_funds: netIntervalProfit,
+//                             net_profit: netIntervalProfit,
+//                             performance_fee_paid: performanceFeePaid, // Ensure correct tracking
+//                         },
+//                         $set: {
+//                             performance_fee_projected: 0,
+//                             current_interval_profit_equity: 0,
+//                             current_interval_profit: 0
+//                         }
+//                     }
+//                 }
+//             });
+
+//             // Prepare manager updates
+//             managerUpdates.push({
+//                 updateOne: {
+//                     filter: { _id: investment.manager },
+//                     update: { $inc: { total_performance_fee_collected: adjustedPerformanceFee } }
+//                 }
+//             });
+
+//             // Prepare performance fee transaction **before resetting performance_fee_projected**
+//             feeTransactions.push({
+//                 user: investment.user,
+//                 investment: investment._id,
+//                 type: 'manager_fee',
+//                 status: 'success',
+//                 amount: performanceFeePaid, // Ensure this reflects the actual deducted amount
+//                 comment: `Performance fee of ${performanceFeePaid} deducted`,
+//             });
+//         }
+
+//         // Execute bulk operations
+//         if (investmentUpdates.length) await investmentModel.bulkWrite(investmentUpdates, { session });
+//         if (managerUpdates.length) await managerModel.bulkWrite(managerUpdates, { session });
+//         if (inviterUpdates.length) await userModel.bulkWrite(inviterUpdates, { session });
+//         if (rebateTransactions.length) await rebateTransactionModel.insertMany(rebateTransactions, { session });
+//         if (feeTransactions.length) await investmentTransactionModel.insertMany(feeTransactions, { session });
+
+//         // Commit transaction
+//         await session.commitTransaction();
+//         session.endSession();
+
+//         res.status(200).json({ message: 'Interval investment handling completed successfully' });
+//     } catch (error) {
+//         await session.abortTransaction();
+//         session.endSession();
+//         console.error('Error in interval investment handling:', error);
+//         res.status(500).json({ errMsg: 'Server side error', error: error.message });
+//     }
+// };
+
+const truncateToTwoDecimals = (num) => {
+    return Math.floor(num * 100) / 100;
+  };
+  
 
 const intervalInvestmentHandle = async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
     try {
-        // Fetch all managers
-        const managers = await managerModel.find({trading_interval:'weekly'});
+        console.log("Fetching managers with weekly trading interval...");
+        const managers = await managerModel.find({ trading_interval: 'weekly' }).session(session);
 
-        // Process each manager
-        for (const manager of managers) {
-            // Fetch all investments for the manager
-            const investments = await investmentModel.find({ manager: manager._id });
+        const managerIds = managers.map(m => m._id);
+        console.log(`Found ${managers.length} managers.`);
 
-            for (const investment of investments) {
-                // Calculate the amount to be added to total funds
-                const netIntervalProfit = investment.current_interval_profit_equity - investment.performance_fee_projected;
+        console.log("Fetching investments...");
+        const investments = await investmentModel.find({ manager: { $in: managerIds } }).session(session);
+        console.log(`Found ${investments.length} investments.`);
 
-                // Update investment's total funds and net profit
-                investment.total_funds += netIntervalProfit;
-                investment.net_profit += netIntervalProfit;
+        const investmentUpdates = [];
+        const managerUpdates = [];
+        const feeTransactions = [];
+        const rebateTransactions = [];
+        const inviterUpdates = [];
 
-                // Update manager's performance fee and investment's fee tracking
-                let adjustedPerformanceFee =investment.performance_fee_projected
+        const processedInvestments = new Set(); // Track processed investment IDs
 
-                if (investment.inviter) {
-                    const inviter = await userModel.findOne({ user_id: investment.inviter });
-                    if (inviter && investment.performance_fee_projected > 0) {
-                        // Calculate inviter's share (5% of total profit)
-                        const inviterShare = investment.current_interval_profit_equity * 0.05;
-                
-                        // Update inviter's wallets and commission tracking
-                        inviter.my_wallets.rebate_wallet += inviterShare;
-                        inviter.referral.total_earned_commission += inviterShare;
-                        await inviter.save();
+        for (const investment of investments) {
 
-                        const rebateTransaction = new rebateTransactionModel({
-                            user : inviter._id,
-                            investment : investment._id,
-                            type : 'commission',
-                            status : 'approved',
-                            amount : inviterShare , 
-                            description : `Weekly commission distribution.`,
-                        })
-                        await rebateTransaction.save()
-                        
-                        // Adjust the performance fee by deducting the inviter's share
-                        adjustedPerformanceFee = Math.max(0, investment.performance_fee_projected - inviterShare);
-                    }
-                }
-                
-                manager.total_performance_fee_collected += adjustedPerformanceFee;
-                investment.performance_fee_paid += investment.performance_fee_projected;
-
-                // Reset performance fee projections and profits
-                investment.performance_fee_projected = 0;
-                investment.current_interval_profit_equity = 0;
-                investment.current_interval_profit = 0;
-
-                // Create a performance fee deduction transaction
-                const feeTransaction = new investmentTransactionModel({
-                    user: investment.user,
-                    investment: investment._id,
-                    type: 'manager_fee',
-                    status: 'success',
-                    amount: investment.performance_fee_paid, // Use correct value
-                    comment: `Performance fee of ${investment.performance_fee_paid} deducted`,
-                });
-
-                // Save investment and fee transaction
-                await investment.save();
-                await feeTransaction.save();
-
-                console.log(`Handled current interval profit of ${netIntervalProfit} for investment ${investment._id}`);
-            }
-
-            // Save the manager with updated performance fee
-            await manager.save();
+        // ✅ Skip iteration if there's no profit or performance fee
+        if (investment.current_interval_profit_equity === 0 && investment.performance_fee_projected === 0) {
+            console.log(`Skipping investment ${investment._id} - No profit or fee to process.`);
+            continue;
         }
 
+        // ✅ Prevent duplicate processing
+        if (processedInvestments.has(investment._id.toString())) {
+            console.warn(`Skipping duplicate processing for investment: ${investment._id}`);
+            continue;
+        }
+
+        processedInvestments.add(investment._id.toString());                                    
+
+        const netIntervalProfit = truncateToTwoDecimals(investment.current_interval_profit_equity - investment.performance_fee_projected);
+        let adjustedPerformanceFee = truncateToTwoDecimals(investment.performance_fee_projected);
+        let inviterShare = 0;
+
+        // if (investment.referred_by) {
+        //     const inviter = await userModel.findOne({ _id: investment.referred_by }).session(session);
+        //     if (inviter && investment.performance_fee_projected > 0) {
+        //         inviterShare = Number((investment.current_interval_profit_equity * 0.05).toFixed(2));
+        //         adjustedPerformanceFee -= inviterShare;
+
+        //         inviterUpdates.push({
+        //             updateOne: {
+        //                 filter: { _id: inviter._id },
+        //                 update: {
+        //                     $inc: {
+        //                         "my_wallets.rebate_wallet": inviterShare,
+        //                         "referral.total_earned_commission": inviterShare
+        //                     }
+        //                 }
+        //             }
+        //         });
+
+        //         rebateTransactions.push({
+        //             user: inviter._id,
+        //             investment: investment._id,
+        //             type: 'commission',
+        //             status: 'approved',
+        //             amount: inviterShare,
+        //             description: `Weekly commission distribution.`,
+        //         });
+
+        //         console.log(`Inviter ${inviter._id} updated with rebate: ${inviterShare}`);
+        //     }
+        // }
+
+        if (investment.referred_by) {
+                const inviter = await userModel.findOne({ _id: investment.referred_by }).session(session);
+                if (inviter && investment.performance_fee_projected > 0) {
+                    inviterShare = truncateToTwoDecimals((investment.current_interval_profit_equity * 0.05))
+                    adjustedPerformanceFee -= inviterShare;
+            
+                    inviterUpdates.push({
+                        updateOne: {
+                            filter: { _id: inviter._id },
+                            update: {
+                                $inc: {
+                                    "my_wallets.rebate_wallet": inviterShare,
+                                    "referral.total_earned_commission": inviterShare,
+                                    "referral.investments.$[elem].rebate_recieved": inviterShare
+                                }
+                            },
+                            arrayFilters: [{ "elem.investment_id": investment._id }]
+                        }
+                    });
+            
+                    rebateTransactions.push({
+                        user: inviter._id,
+                        investment: investment._id,
+                        type: 'commission',
+                        status: 'approved',
+                        amount: inviterShare,
+                        description: `Weekly commission distribution.#MANAGER:${adjustedPerformanceFee} #REBATE:${inviterShare}`,
+                    });
+            
+                    console.log(`Inviter ${inviter._id} updated with rebate: ${inviterShare}`);
+                }
+            }
+            
+            const performanceFeePaid = truncateToTwoDecimals(investment.performance_fee_projected);
+
+            investmentUpdates.push({
+                updateOne: {
+                    filter: { _id: investment._id },
+                    update: {
+                        $inc: {
+                            total_funds: netIntervalProfit,
+                            net_profit: netIntervalProfit,
+                            performance_fee_paid: performanceFeePaid,
+                        },
+                        $set: {
+                            performance_fee_projected: 0,
+                            current_interval_profit_equity: 0,
+                            current_interval_profit: 0
+                        }
+                    }
+                }
+            });
+
+            managerUpdates.push({
+                updateOne: {
+                    filter: { _id: investment.manager },
+                    update: { $inc: { total_performance_fee_collected: adjustedPerformanceFee } }
+                }
+            });
+
+            feeTransactions.push({
+                user: investment.user,
+                investment: investment._id,
+                type: 'manager_fee',
+                status: 'success',
+                amount: performanceFeePaid,
+                comment: `Performance fee of deducted`,
+            });
+
+            console.log(`Investment ${investment._id} updated: net profit = ${netIntervalProfit}, performance fee = ${performanceFeePaid}`);
+        }
+
+        console.log("Executing bulk operations...");
+
+        const bulkOperations = [];
+
+        if (investmentUpdates.length) {
+            bulkOperations.push(investmentModel.bulkWrite(investmentUpdates, { session }).then(res => console.log(`Investment updates applied: ${res.modifiedCount}`)));
+        }
+
+        if (managerUpdates.length) {
+            bulkOperations.push(managerModel.bulkWrite(managerUpdates, { session }).then(res => console.log(`Manager updates applied: ${res.modifiedCount}`)));
+        }
+
+        if (inviterUpdates.length) {
+            bulkOperations.push(userModel.bulkWrite(inviterUpdates, { session }).then(res => console.log(`Inviter updates applied: ${res.modifiedCount}`)));
+        }
+
+        if (rebateTransactions.length) {
+            bulkOperations.push(rebateTransactionModel.insertMany(rebateTransactions, { session }).then(res => console.log(`Rebate transactions inserted: ${res.length}`)));
+        }
+
+        if (feeTransactions.length) {
+            bulkOperations.push(investmentTransactionModel.insertMany(feeTransactions, { session }).then(res => console.log(`Fee transactions inserted: ${res.length}`)));
+        }
+
+        await Promise.all(bulkOperations);
+
+        await session.commitTransaction();
+        session.endSession();
+
+        console.log("Interval investment handling completed successfully.");
         res.status(200).json({ message: 'Interval investment handling completed successfully' });
     } catch (error) {
+        await session.abortTransaction();
+        session.endSession();
         console.error('Error in interval investment handling:', error);
         res.status(500).json({ errMsg: 'Server side error', error: error.message });
     }
 };
 
-
-  
 module.exports = {
     intervalInvestmentHandle,
 };
+
+

@@ -42,10 +42,11 @@ const createRollover = async()=>{
 }
 
 //Schedule daily rollover at midnight UTC
-//cron.schedule("0 0 * * *", async () => {
 cron.schedule("*/15 * * * *", async () => {
+//cron.schedule("0 0 * * *", async () => {
   console.log("Running daily rollover...");
   createRollover()  
 });
 
-createRollover()
+// createRollover()
+

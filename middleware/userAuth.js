@@ -10,25 +10,27 @@ const verifyToken = async (req, res, next) => {
       if (!token.startsWith('Bearer')) {
         return res.status(401).json({ msg: 'Authentication failed: Invalid token format.' });
       }
-    console.log(token);
+      console.log(token);
+        
+      const tokenWithoutBearer = token.slice(7).trim();
       
-    const tokenWithoutBearer = token.slice(7).trim();
-    
-    const decoded = jwt.verify(tokenWithoutBearer, process.env.JWT_SECRET_KEY);
-    console.log('decoded : '+decoded);
-    req.decodedUser = decoded;
-    if (decoded.role === 'user') {
-         return next();
-     } else {
-      return res.status(403).json({ message: 'Authentication failed: Invalid role.' });
-     }
-    } catch (error) {
-      if (error.name === 'TokenExpiredError') {
-        console.log('TokenExpiredError');
-        return res.status(401).json({ msg: 'Authentication failed: Token has expired.' });
+      const decoded = jwt.verify(tokenWithoutBearer, process.env.JWT_SECRET_KEY);
+      console.log('decoded : '+decoded);
+      req.decodedUser = decoded;
+      if (decoded.role === 'user') {
+            return next();
+      } else {
+        return res.status(403).json({ message: 'Authentication failed: Invalid role.' });
       }
-      return res.status(401).json({ msg: 'Authentication failed: Invalid token.' });
-    }
+
+      } catch (error) {
+        console.log(error,'error in middleware');
+        if (error.name === 'TokenExpiredError') {
+          console.log('TokenExpiredError');
+          return res.status(401).json({ msg: 'Authentication failed: Token has expired.' });
+        }
+        return res.status(401).json({ msg: 'Authentication failed: something went error' });
+      }
   };
   
   module.exports = { 

@@ -36,7 +36,6 @@ const fetchAndApprovePendingInvestmentTransactions=async(rollover_id)=>{
 
 }
 
-
 module.exports = {
     fetchAndApprovePendingInvestmentTransactions,
     fetchAndUseLatestRollover

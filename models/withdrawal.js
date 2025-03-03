@@ -29,7 +29,7 @@ const withdrawalSchema = new Schema({
     index: true 
   },
   is_payment_sent: {
-    type: Boolean,
+    type: Boolean,  
     default: false
   },
   amount: { 

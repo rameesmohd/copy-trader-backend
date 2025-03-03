@@ -136,7 +136,7 @@ const fetchManager =async(req,res)=>{
         const {id} = req.query
         console.log(req.query);
         
-        const manager =  await managerModel.findOne({user_id : id },{password : 0})
+        const manager =  await managerModel.findOne({manager_id : id },{password : 0})
         console.log("manager : ", manager);
         if(manager){
             return res.status(200).json({result : manager})
@@ -321,11 +321,26 @@ const fetchRebateTransactions=async(req,res)=>{
         console.log(req.decodedUser);
         
         const _id =new mongoose.Types.ObjectId(req.decodedUser._id);
+
+        const invData = await userModel
+        .findOne({ _id })
+        .select("referral") // Select only the referral field
+        .populate({
+          path: "referral.investments.investment_id",
+          select: "_id user total_funds inv_id", // Select only _id and user field
+          populate: {
+            path: "user", // Populate the user field inside investment_id
+            select: "user_id", // Select only user_id from the user document
+          },
+        });
         
-        const data = await rebateTransactionModel.find({user : _id})
+        const data = await rebateTransactionModel.find({user : _id}).populate({
+            path: 'investment',
+            select: 'inv_id'
+          });
         console.log(data);
         
-        return res.status(200).json({result : data})
+        return res.status(200).json({result : data,inv : invData.referral})
     } catch (error) {
         console.error(error);
         res.status(500).json({ errMsg: 'Server error!', error: error.message });

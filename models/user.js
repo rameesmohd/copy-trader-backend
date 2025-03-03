@@ -108,7 +108,7 @@ const userSchema = new mongoose.Schema({
     },
     main_wallet: {
       type : Number,
-      default : 0.00,
+      default : 0,
       set: twoDecimalPlaces,
       min: 0
     },
@@ -120,7 +120,7 @@ const userSchema = new mongoose.Schema({
     },
     rebate_wallet: {
       type : Number,
-      default : 0.00,
+      default : 0,
       set: twoDecimalPlaces,
       min: 0
     },
@@ -128,7 +128,7 @@ const userSchema = new mongoose.Schema({
   referral : {
     total_earned_commission : {
       type : Number,
-      default : 0.00,
+      default : 0,
       set: twoDecimalPlaces,
       min: 0
     },

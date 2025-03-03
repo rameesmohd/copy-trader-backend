@@ -5,6 +5,7 @@ const userModel = require('../models/user')
 const managerModel = require('../models/manager');
 const investmentTradesModel =require('../models/investorTrades');
 const rolloverModel = require('../models/rollover');
+const { default: mongoose } = require('mongoose');
 
 const getLatestPendingRollover = async () => {
   const latestRollover = await rolloverModel.findOne({ status: "completed" }).sort({ start_time: -1 });
@@ -143,7 +144,7 @@ const makeDeposit = async (req, res) => {
   
   try {
     const { userId, managerId, amount, ref } = req.body;
-
+    
     if (!userId || !managerId || amount <= 0) {
       return res.status(400).json({ errMsg: 'Invalid input data!' });
     }
@@ -176,6 +177,13 @@ const makeDeposit = async (req, res) => {
     // Count investments for unique inv_id
     const invCount = await investmentModel.countDocuments().session(session);
 
+    let inviter;
+    if (ref) {
+      inviter = await userModel.findOne({ user_id: ref }).session(session);
+    } else if (user.referral.referred_by){
+      inviter = user.referral.referred_by
+    }
+
     // Create investment entry (DO NOT reference _id yet)
     const investment = new investmentModel({
       inv_id: 21000 + invCount,
@@ -191,14 +199,13 @@ const makeDeposit = async (req, res) => {
       manager_performance_fee: manager.performance_fees_percentage,
       min_withdrawal: manager.min_withdrawal,
       deposits: [],
+      referred_by : inviter ? inviter._id : null
     });
 
     await investment.save({ session }); // ✅ Save first
 
     // Handle Referral (If Exists)
-    if (ref) {
-      const inviter = await userModel.findOne({ user_id: ref }).session(session);
-
+    if (inviter) {
       if (inviter && inviter._id.toString() !== user._id.toString()) {
         // Now investment._id exists, so we can push it
         await userModel.findByIdAndUpdate(inviter._id, {

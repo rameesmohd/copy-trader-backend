@@ -5,8 +5,8 @@ const {fetchAndUseLatestRollover} = require('../rolloverController')
 
 const getManagerData=async(req,res)=>{
     try {
-        const {user_id} = req.query
-        const manager = await managerModel.findOne({user_id},{
+        const {_id} = req.query
+        const manager = await managerModel.findById({_id},{
             password:0,
             my_investments:0,
             trade_history:0,
@@ -55,7 +55,8 @@ const login=async(req,res)=>{
         
         if(isMatch){
             const token = jwt.sign({ _id:managerData._id ,role : 'manager'}, process.env.JWT_SECRET_KEY_MANAGER, { expiresIn: '24h' });
-            return res.status(200).json({token})
+            const { password, ...userWithoutPassword } = managerData;
+            return res.status(200).json({token,result:userWithoutPassword})
         }
 
         return res.status(400).json({ errMsg: 'Invalid password. Please try again.' });

@@ -76,7 +76,7 @@ router.route('/investment')
     .post(topUpInvestment)
     .patch(handleInvestmentWithdrawal)
 
-router.route('/manager')
+router.route('/find-manager')
     .get(fetchManager)
     .post(makeDeposit)
 
@@ -89,7 +89,6 @@ router.get('/transaction-history',fetchUserTransactions)
 router.get('/rebate-history',fetchRebateTransactions)
 
 router.get('/trades',fetchInvestmentTrades)
-
 
 router.route('/ticket')
         .post(upload.array('upload',5),submitTicket)

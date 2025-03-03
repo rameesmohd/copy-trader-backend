@@ -115,7 +115,7 @@ const trc20CheckAndTransferPayment = async (req,res) => {
             const proccessingPayment = await depositsModel.findOneAndUpdate(
                 { _id : order_id},
                 { $set : {
-                    status: 'success',
+                    status: 'approved',
                     is_payment_recieved : true
                 }},
                 { new: true }
@@ -197,19 +197,22 @@ const trc20CheckAndTransferPayment = async (req,res) => {
 };
 
 const trc20WithdrawFromMainWallet = async (req, res) => {
-    const { user_id,recipient, amount, network_fee } = req.body;
+    let { user_id,recipient, amount, network_fee } = req.body;
     console.log( req.body);
+
+    // Ensure amount always has two decimal places
+    amount = parseFloat(amount).toFixed(2);
     
     if (!recipient) {
-        return res.status(400).json({ error: 'Recipient is required' });
+        return res.status(400).json({ errMsg: 'Recipient is required' });
     }
 
     if (amount === undefined || amount === null) {
-        return res.status(400).json({ error: 'Amount is required' });
+        return res.status(400).json({ errMsg: 'Amount is required' });
     }
 
     if (network_fee === undefined || network_fee === null || network_fee < 0) {
-        return res.status(400).json({ error: 'Network fee is required' });
+        return res.status(400).json({ errMsg: 'Network fee is required' });
     }
     
     const amount_to_withdraw = Number(amount) - Number(network_fee);
@@ -218,26 +221,26 @@ const trc20WithdrawFromMainWallet = async (req, res) => {
         const userData = await userModel.findOne({_id : user_id},{my_wallets:1})
         
         if (!userData) {
-            return res.status(404).json({ error: 'User not found.' });
+            return res.status(404).json({ errMsg: 'User not found.' });
         }
 
         if (userData.is_blocked) {
-            return res.status(402).json({ error : 'user blocked by admin'});
+            return res.status(402).json({ errMsg : 'user blocked by admin'});
         }
         
         if(userData.my_wallets.main_wallet < amount){
-            return res.status(400).send('Insufficient balance in your wallet!');
+            return res.status(400).json({ errMsg : 'Insufficient balance in your wallet!'})
         }
 
         if(userData.my_wallets.main_wallet  < 20){
-            return res.status(400).send('Insufficient balance in your wallet!');
+            return res.status(400).json({ errMsg : 'Insufficient balance in your wallet!'})
         }
 
         const tronWebInstance = createTronWebInstance(process.env.PRIVATE_KEY);
         const usdtContract = await initializeUsdtContract(tronWebInstance);
     
         if (!tronWebInstance.isAddress(recipient)) {
-            return res.status(400).send('Invalid recipient address');
+            return res.status(400).json({ errMsg : 'Invalid recipient address'})
         }
 
         const newPendingWithdrawal = new withdrawalModel({
@@ -302,11 +305,11 @@ const trc20WithdrawFromMainWallet = async (req, res) => {
 
         if(transaction){
             // Update withdrawal and transaction status to 'success'
-            const withdraw =  await withdrawalModel.findByIdAndUpdate(
-                {_id: newPendingWithdrawal._id}, 
-                { status: 'success' , crypto_txid : transaction},
-                { new: true }
-            );
+                const withdraw =  await withdrawalModel.findByIdAndUpdate(
+                    {_id: newPendingWithdrawal._id}, 
+                    { status: 'approved' , crypto_txid : transaction},
+                    { new: true }
+                );
             
             await userTransactionModel.findOneAndUpdate(
                 { _id : newUserTrasaction._id},
