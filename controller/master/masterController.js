@@ -98,6 +98,40 @@ const fetchWithdrawals=async(req,res)=>{
         res.status(500).json({ errMsg: 'Error fetching deposits, please try again', error: error.message });
     }
 }
+
+const getPendingKYCRequests = async (req, res) => {
+    try {
+      const pendingUsers = await userModel.find({ 
+        $or: [
+          { identify_proof_status: "submitted" },
+          { residential_proof_status: "submitted" },
+          { residential_proof_status: "verified" },
+          { identify_proof_status: "verified" },
+        ]
+      },{is_kyc_verified : false}).select("first_name user_id country is_email_verified last_name email is_email_verified is_kyc_verified identify_proof_status residential_proof_status identify_proof residential_proof createdAt");
+      res.status(200).json({ success: true, result: pendingUsers });
+    } catch (error) {
+      res.status(500).json({ success: false, message: "Error fetching KYC requests", error });
+    }
+};
+
+const approveKycDocs=async(req,res)=>{
+    try {
+        const {role,record_id,status} = req.body
+
+        const key = role=='identify_proof' ? 'identify_proof_status' : role=='residential_proof' ? 'residential_proof_status' : res.status(400).json({ errMsg: "Invalid payloads!"});  
+        console.log(req.body);
+        const updatedUser = await userModel.findOneAndUpdate(
+            { _id: record_id }, 
+            { [key]: status }, 
+            { new: true }
+          );
+        console.log(updatedUser);
+        res.status(200).json({ success: true});  
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Error approving kyc docs", error });
+    }
+}
   
 module.exports = {
     fetchUser,
@@ -106,5 +140,7 @@ module.exports = {
     updateManager,
     masterLogin,
     fetchDeposits,
-    fetchWithdrawals
+    fetchWithdrawals,
+    getPendingKYCRequests,
+    approveKycDocs
 }

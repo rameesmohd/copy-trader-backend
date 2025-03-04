@@ -7,7 +7,9 @@ const {
         updateManager,
         masterLogin,
         fetchDeposits,
-        fetchWithdrawals
+        fetchWithdrawals,
+        getPendingKYCRequests,
+        approveKycDocs
     } =require('../controller/master/masterController')
 const {verifyToken} = require('../middleware/masterAuth')
 
@@ -29,6 +31,9 @@ router.route('/deposits')
 router.route('/withdrawals')
     .get(fetchWithdrawals)
 
+router.route('/kyc-requests')
+    .get(getPendingKYCRequests)
+    .patch(approveKycDocs)
 
 module.exports= router
 
