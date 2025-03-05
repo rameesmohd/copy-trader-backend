@@ -32,7 +32,9 @@ const {
 const { 
     trc20CreateDeposit,
     trc20CheckAndTransferPayment,
-    trc20WithdrawFromMainWallet 
+    trc20WithdrawFromMainWallet, 
+    bep20CreateDeposit,
+    bep20CheckAndTransferPayment
 } = require('../controller/paymentController')
 
 const upload = require('../config/multer');
@@ -105,11 +107,13 @@ router.post('/kyc',handleKycProofSubmit)
 router.route('/deposit/usdt-trc20')
     .get(trc20CreateDeposit) 
     .post(trc20CheckAndTransferPayment)
+
+router.route('/deposit/usdt-bep20')
+    .get(bep20CreateDeposit) 
+    .post(bep20CheckAndTransferPayment)
     
 router.route('/withdraw/usdt-trc-20')
     .post(trc20WithdrawFromMainWallet)
-
-
 
 module.exports=router
 

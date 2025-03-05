@@ -13,7 +13,7 @@ const depositSchema = new Schema({
     },
     payment_mode : {
         type: String,
-        enum : ["usdt-trc20"],
+        enum : ["usdt-trc20","usdt-bep20"],
         required: true
     },
     crypto_txid : {

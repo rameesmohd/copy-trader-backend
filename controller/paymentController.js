@@ -1,7 +1,6 @@
 const {TronWeb}  = require('tronweb');
 const userModel = require('../models/user');
 const dotenv = require('dotenv');
-const withdrawModel = require('../models/payments');
 const crypto = require('crypto');
 const depositsModel = require('../models/deposit');
 const userTransactionModel = require('../models/userTransaction');
@@ -38,7 +37,7 @@ const trc20CreateDeposit = async (req, res) => {
             return res.status(400).json({ message: 'Invalid amount' });
         }
 
-        const alreadyGenerated = await depositsModel.findOne({ user: user_id, status: 'pending' });
+        const alreadyGenerated = await depositsModel.findOne({ user: user_id,payment_mode:"usdt-trc20",status:"pending"});
 
         if (!alreadyGenerated) {
             const tronWebInstance = createTronWebInstance(process.env.PRIVATE_KEY);
@@ -54,7 +53,7 @@ const trc20CreateDeposit = async (req, res) => {
             const newDeposit = new depositsModel({
                 user: user._id,
                 wallet_id: user.my_wallets.main_wallet_id,
-                payment_mode: payment_mode,
+                payment_mode: "usdt-trc20",
                 amount,
                 payment_address,
                 private_key: privateKey,
@@ -96,6 +95,7 @@ const trc20CheckAndTransferPayment = async (req,res) => {
         return res.status(400).json({status: 'error', msg: 'No data to execute in body'});
     }
 
+    try {
     const pendingPayment = await depositsModel.findOne({_id : order_id ,status: 'pending'});
 
     if (!pendingPayment) return  res.status(400).json({ status: 'error', message: 'Order not exists!.' });;
@@ -103,7 +103,6 @@ const trc20CheckAndTransferPayment = async (req,res) => {
     const tronWebInstance = createTronWebInstance(pendingPayment.private_key);
     const usdtContract = await initializeUsdtContract(tronWebInstance);
 
-    try {
         const usdtBalance = await usdtContract.methods.balanceOf(pendingPayment.payment_address).call();
         const balanceInSun = usdtBalance.toString();
 
@@ -472,10 +471,273 @@ const trc20WithdrawFromMainWallet = async (req, res) => {
 //     }
 // }
 
+//-----------------------------------------------------BEP20---------------------------------------------------------
+
+
+const Web3 = require('web3');
+const { ethers } = require("ethers");
+const USDT_ADDRESS = "0x55d398326f99059ff775485246999027b3197955"; // BEP-20 USDT contract
+
+
+const url = 'https://rpc.ankr.com/bsc'
+
+const web3 = new Web3(new Web3.providers.HttpProvider(url));
+
+web3.eth.getBlockNumber((error, blockNumber) => {
+    if(!error) {
+        console.log(blockNumber);
+    } else {
+        console.log(error);
+    }
+});
+
+const usdtContract = new web3.eth.Contract([
+    {
+        "constant": true,
+        "inputs": [{ "name": "_owner", "type": "address" }],
+        "name": "balanceOf",
+        "outputs": [{ "name": "balance", "type": "uint256" }],
+        "type": "function"
+    }
+], USDT_ADDRESS);
+
+
+const generateWallet = () => {
+    const wallet = ethers.Wallet.createRandom(); // Generate a new wallet
+    return {
+        address: wallet.address,   // Public Address
+        privateKey: wallet.privateKey // Private Key (Store securely)
+    };
+};
+// Example Usage:
+// const userWallet = generateWallet();
+// console.log("User Deposit Address:", userWallet.address);
+// console.log("Private Key (Store securely!):", userWallet.privateKey);
+
+// Endpoint to generate a unique address and amount for payment
+const bep20CreateDeposit = async (req, res) => {
+    try {
+        const { user_id, payment_mode, amount } = req.query;
+
+        if (amount < 50) {
+            return res.status(400).json({ message: 'Invalid amount' });
+        }
+
+        const alreadyGenerated = await depositsModel.findOne({ user: user_id,payment_mode: "usdt-bep20", status: 'pending' });
+
+        if (!alreadyGenerated) {
+            const generatedWallet = generateWallet()
+
+            const user = await userModel.findOne({ _id: user_id });
+            if (!user) {
+                return res.status(402).json({ message: 'User not found' });
+            }
+
+            const newDeposit = new depositsModel({
+                user: user._id,
+                wallet_id: user.my_wallets.main_wallet_id,
+                payment_mode: "usdt-bep20",
+                amount,
+                payment_address : generatedWallet.address,
+                private_key: generatedWallet.privateKey,
+            });
+
+            // Store payment details
+            const deposit = await newDeposit.save();
+            return res.status(200).json({ result: { address: deposit.payment_address, _id: deposit._id } });
+        } else {
+            if (alreadyGenerated.amount !== amount) {
+                await depositsModel.updateOne({ _id: alreadyGenerated._id }, { $set: { amount: amount } });
+            }
+            return res.status(200).json({ result: { address: alreadyGenerated.payment_address, _id: alreadyGenerated._id } });
+        }
+    } catch (error) {
+        console.log(error);
+        return res.status(500).send('Error generating new deposit: ' + error.message);
+    }
+};
+
+const getUSDTBalance = async (walletAddress) => {
+    try {
+        const balance = await usdtContract.methods.balanceOf(walletAddress).call();
+        return web3.utils.fromWei(balance, "ether"); // Convert to readable format
+    } catch (error) {
+        console.error("Error fetching balance:", error);
+        return "0";
+    }
+};
+
+// // Example Usage:
+// (async () => {
+//     const balance = await getUSDTBalance(userWallet.address);
+//     console.log(`USDT Balance: ${balance}`);
+// })();
+
+const bep20CheckAndTransferPayment = async (req,res) => {
+    const { order_id } = req.body;
+
+    console.log(req.body);
+    
+    if(!order_id) {
+        return res.status(400).json({status: 'error', msg: 'No data to execute in body'});
+    }
+
+    const pendingPayment = await depositsModel.findOne({_id : order_id ,payment_mode : "usdt-bep20",status: 'pending'});
+
+    if (!pendingPayment) return  res.status(400).json({ status: 'error', message: 'Order not exists!.' });;
+
+    try {
+        const balance = await getUSDTBalance(pendingPayment.payment_address)
+        console.log('balance :',balance);
+
+        if (balance <= pendingPayment.amount) {
+            //-------------------------DB_Operations---------------------------//
+            const proccessingPayment = await depositsModel.findOneAndUpdate(
+                { _id : order_id},
+                { $set : {
+                    status: 'approved',
+                    is_payment_recieved : true
+                }},
+                { new: true }
+            );
+
+            const userData = await userModel.findOne({ _id: proccessingPayment.user });
+            if (!userData) {
+                return res.status(402).json({message : 'user not found'});
+            }
+            
+            const newUserTrasaction = new userTransactionModel({
+                user: proccessingPayment.user,
+                type: 'deposit',
+                payment_mode : 'usdt',
+                status: 'approved',
+                amount: proccessingPayment.amount,
+                related_transaction: proccessingPayment._id,
+                transaction_type : 'deposits',
+                description : 'Deposited by usdt trc-20',
+                transaction_id : proccessingPayment.transaction_id
+            });
+            await newUserTrasaction.save()
+
+            // Perform the update operation
+            const updatedUserData = await userModel.findOneAndUpdate(
+                { _id: userData._id },
+                {
+                    $inc: {
+                        'my_wallets.main_wallet': pendingPayment.amount
+                    }
+                },
+                { new: true ,select: '-password' }
+            );
+
+            //trasfer to company wallet logic here--
+            
+            return res.status(200).json({ 
+                status: 'success' ,
+                transaction_id: proccessingPayment.transaction_id,
+                userData : updatedUserData
+            });
+        }
+        return res.status(200).json({ status: 'failure', message: 'Payment not completed.' });
+    } catch (error) {
+        if (error.response) {   
+            console.error('Error response data:', error.response.data);
+            console.error('Error response status:', error.response.status);
+            console.error('Error response headers:', error.response.headers);
+        } else if (error.request) {
+            console.error('Error request data:', error.request);
+        } else {
+            console.error('Error message:', error);
+        }
+        return res.status(500).json({ status: 'failure', message: 'server side error.' });
+    }
+};
+
+// // ✅ Wallets
+// const PERSONAL_WALLET = "0xYourPersonalWalletAddress";
+// const PERSONAL_PRIVATE_KEY = "0xYourPrivateKey"; // 🚨 Secure this!
+// const USDT_ADDRESS = "0x64544969ed7EBf5f083679233325356EbE738930";
+
+// // ✅ ABIs
+// const usdtAbi = [
+//     "function balanceOf(address owner) view returns (uint256)",
+//     "function transfer(address to, uint256 value) public returns (bool)"
+// ];
+
+// // ✅ Create a Wallet for Sending Gas
+// const personalWallet = new ethers.Wallet(PERSONAL_PRIVATE_KEY, provider);
+
+// // ✅ Function to Check BNB Balance
+// const getBNBBalance = async (walletAddress) => {
+//     const balance = await provider.getBalance(walletAddress);
+//     return ethers.formatUnits(balance, "ether"); // Convert to BNB
+// };
+
+// // ✅ Function to Send BNB for Gas
+// const sendBNBForGas = async (toAddress) => {
+//     try {
+//         const gasAmount = ethers.parseUnits("0.002", "ether"); // Send 0.002 BNB for gas
+//         const tx = await personalWallet.sendTransaction({
+//             to: toAddress,
+//             value: gasAmount
+//         });
+//         await tx.wait();
+//         console.log(`✅ Sent 0.002 BNB for gas to ${toAddress}`);
+//     } catch (error) {
+//         console.error("❌ Error sending BNB for gas:", error);
+//     }
+// };
+
+// // ✅ Function to Transfer USDT
+// const transferUSDT = async (userPrivateKey) => {
+//     try {
+//         const userWallet = new ethers.Wallet(userPrivateKey, provider);
+//         const userAddress = userWallet.address;
+//         const contract = new ethers.Contract(USDT_ADDRESS, usdtAbi, userWallet);
+
+//         // 🔹 Check User's BNB Balance for Gas
+//         const bnbBalance = await getBNBBalance(userAddress);
+//         if (parseFloat(bnbBalance) < 0.0005) {  // If BNB is too low, top up
+//             await sendBNBForGas(userAddress);
+//         }
+
+//         // 🔹 Check User's USDT Balance
+//         const balance = await contract.balanceOf(userAddress);
+//         if (balance == 0) {
+//             console.log("No USDT balance to transfer.");
+//             return;
+//         }
+
+//         // 🔹 Convert balance and send USDT
+//         const amountToSend = ethers.parseUnits(balance.toString(), 18);
+//         const tx = await contract.transfer(PERSONAL_WALLET, amountToSend);
+//         await tx.wait();
+        
+//         console.log(`✅ Transferred ${ethers.formatUnits(balance, 18)} USDT to ${PERSONAL_WALLET}`);
+//     } catch (error) {
+//         console.error("❌ Error transferring USDT:", error);
+//     }
+// };
+
+// // ✅ Example Usage
+// (async () => {
+//     const userWallet = {
+//         address: "0xUserDepositWallet",
+//         privateKey: "0xUserPrivateKey"
+//     };
+
+//     await transferUSDT(userWallet.privateKey);
+// })();
+
 module.exports = {
+    //-------------TRC20-----------
     trc20CreateDeposit,
     trc20CheckAndTransferPayment, 
     trc20WithdrawFromMainWallet,
     // withdrawFromSecondWallet,
     // getAddressBalance
+
+    //-------------BEP20----------
+    bep20CreateDeposit,
+    bep20CheckAndTransferPayment
 };

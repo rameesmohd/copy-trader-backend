@@ -102,37 +102,100 @@ const fetchWithdrawals=async(req,res)=>{
 const getPendingKYCRequests = async (req, res) => {
     try {
       const pendingUsers = await userModel.find({ 
+        // is_kyc_verified: false,  
         $or: [
           { identify_proof_status: "submitted" },
           { residential_proof_status: "submitted" },
           { residential_proof_status: "verified" },
           { identify_proof_status: "verified" },
         ]
-      },{is_kyc_verified : false}).select("first_name user_id country is_email_verified last_name email is_email_verified is_kyc_verified identify_proof_status residential_proof_status identify_proof residential_proof createdAt");
+      }).select("first_name user_id country is_email_verified last_name email is_email_verified is_kyc_verified identify_proof_status residential_proof_status identify_proof residential_proof createdAt");
       res.status(200).json({ success: true, result: pendingUsers });
     } catch (error) {
       res.status(500).json({ success: false, message: "Error fetching KYC requests", error });
     }
 };
 
-const approveKycDocs=async(req,res)=>{
+const approveKycDocs = async (req, res) => {
     try {
-        const {role,record_id,status} = req.body
+        const { role, record_id, status } = req.body;
 
-        const key = role=='identify_proof' ? 'identify_proof_status' : role=='residential_proof' ? 'residential_proof_status' : res.status(400).json({ errMsg: "Invalid payloads!"});  
+        // Validate role first
+        if (role !== 'identify_proof' && role !== 'residential_proof') {
+            return res.status(400).json({ errMsg: "Invalid payloads!" });
+        }
+
+        const key = role === 'identify_proof' ? 'identify_proof_status' : 'residential_proof_status';
         console.log(req.body);
-        const updatedUser = await userModel.findOneAndUpdate(
-            { _id: record_id }, 
-            { [key]: status }, 
-            { new: true }
-          );
-        console.log(updatedUser);
-        res.status(200).json({ success: true});  
+        
+        if (status === 'verified') {
+            await userModel.updateOne(
+                { _id: record_id }, 
+                { $set: { [key]: status } } // Wrapped in $set
+            );
+        }
+
+        if (status === 'unavailable') {
+            await userModel.updateOne(
+                { _id: record_id }, 
+                { 
+                    $set: { [key]: status },
+                    $inc: { kyc_step: -1 } // Correctly formatted
+                }
+            );
+        }
+
+        res.status(200).json({ success: true });
+
     } catch (error) {
-        res.status(500).json({ success: false, message: "Error approving kyc docs", error });
+        res.status(500).json({ success: false, message: "Error approving KYC docs", error });
     }
-}
-  
+};
+
+const approveKyc = async (req, res) => {
+    try {
+        const { _id } = req.body;
+        console.log(req.body);
+
+        const user = await userModel.findById(_id); // Corrected findById
+
+        if (!user) {
+            return res.status(404).json({ errMsg: "User not found" });
+        }
+        
+        if (user.is_email_verified && user.identify_proof_status === 'verified' && user.residential_proof_status === 'verified') {
+            await userModel.findByIdAndUpdate(_id, { is_kyc_verified: true });
+
+            return res.status(200).json({ msg: "Approved successfully" });
+        }
+
+        return res.status(400).json({ errMsg: "Not a valid KYC approval" });
+        
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Error approving KYC docs", error });
+    }
+};
+
+const handleWithdraw = async (req, res) => {
+    try {
+        const { _id, status } = req.body;
+
+        // Validate status
+        if (status !== 'approved' && status !== 'rejected') {
+            return res.status(400).json({ errMsg: "Invalid status value" });
+        }
+
+        // Update withdrawal status
+        await withdrawModel.updateOne({ _id }, { $set: { status } });
+
+        return res.status(200).json({ msg: `Withdrawal ${status} successfully` });
+    } catch (error) {
+        res.status(500).json({ errMsg: "Error approving withdrawal", error });
+    }
+};
+
+
+
 module.exports = {
     fetchUser,
     addManager,
@@ -142,5 +205,7 @@ module.exports = {
     fetchDeposits,
     fetchWithdrawals,
     getPendingKYCRequests,
-    approveKycDocs
+    approveKycDocs,
+    approveKyc,
+    handleWithdraw
 }

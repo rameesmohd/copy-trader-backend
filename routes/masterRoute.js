@@ -9,7 +9,9 @@ const {
         fetchDeposits,
         fetchWithdrawals,
         getPendingKYCRequests,
-        approveKycDocs
+        approveKycDocs,
+        approveKyc,
+        handleWithdraw
     } =require('../controller/master/masterController')
 const {verifyToken} = require('../middleware/masterAuth')
 
@@ -30,10 +32,12 @@ router.route('/deposits')
 
 router.route('/withdrawals')
     .get(fetchWithdrawals)
+    .patch(handleWithdraw)
 
 router.route('/kyc-requests')
     .get(getPendingKYCRequests)
     .patch(approveKycDocs)
+    .post(approveKyc)
 
 module.exports= router
 
