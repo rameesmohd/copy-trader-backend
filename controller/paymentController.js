@@ -509,7 +509,7 @@ const generateWallet = () => {
         privateKey: wallet.privateKey // Private Key (Store securely)
     };
 };
-// Example Usage:
+
 // const userWallet = generateWallet();
 // console.log("User Deposit Address:", userWallet.address);
 // console.log("Private Key (Store securely!):", userWallet.privateKey);
@@ -557,19 +557,29 @@ const bep20CreateDeposit = async (req, res) => {
     }
 };
 
-const getUSDTBalance = async (walletAddress) => {
+// const getUSDTBalance = async (walletAddress) => {
+//     try {
+//         const balance = await usdtContract.methods.balanceOf(walletAddress).call();
+//         return web3.utils.fromWei(balance, "ether"); // Convert to readable format
+//     } catch (error) {
+//         console.error("Error fetching balance:", error);
+//         return "0";
+//     }
+// };
+
+const getUSDTBEPBalance = async (walletAddress) => {
     try {
         const balance = await usdtContract.methods.balanceOf(walletAddress).call();
-        return web3.utils.fromWei(balance, "ether"); // Convert to readable format
+        return Number(balance) / 10 ** 6; // Convert to correct USDT format
     } catch (error) {
         console.error("Error fetching balance:", error);
-        return "0";
+        return 0;
     }
 };
 
 // // Example Usage:
 // (async () => {
-//     const balance = await getUSDTBalance(userWallet.address);
+//     const balance = await getUSDTBEPBalance(userWallet.address);
 //     console.log(`USDT Balance: ${balance}`);
 // })();
 
@@ -587,7 +597,7 @@ const bep20CheckAndTransferPayment = async (req,res) => {
     if (!pendingPayment) return  res.status(400).json({ status: 'error', message: 'Order not exists!.' });;
 
     try {
-        const balance = await getUSDTBalance(pendingPayment.payment_address)
+        const balance = await getUSDTBEPBalance(pendingPayment.payment_address)
         console.log('balance :',balance);
 
         if (balance <= pendingPayment.amount) {
@@ -614,7 +624,7 @@ const bep20CheckAndTransferPayment = async (req,res) => {
                 amount: proccessingPayment.amount,
                 related_transaction: proccessingPayment._id,
                 transaction_type : 'deposits',
-                description : 'Deposited by usdt trc-20',
+                description : 'Deposited by usdt bep-20',
                 transaction_id : proccessingPayment.transaction_id
             });
             await newUserTrasaction.save()
@@ -729,6 +739,42 @@ const bep20CheckAndTransferPayment = async (req,res) => {
 //     await transferUSDT(userWallet.privateKey);
 // })();
 
+const fetchAddressBalance = async (req, res) => {
+    try {
+        const { _id } = req.query;
+        const { payment_address, private_key, payment_mode } = await depositsModel.findOne({ _id });
+
+        if (!payment_address || !private_key) {
+            return res.status(400).send("Invalid payment ID");
+        }
+
+        let usdtBalance = "0"; 
+
+        if (payment_mode === "usdt-trc-20") {
+            const tronWebInstance = createTronWebInstance(process.env.PRIVATE_KEY);
+            const usdtContract = await initializeUsdtContract(tronWebInstance);
+            
+            const balance = await usdtContract.methods.balanceOf(payment_address).call();
+            usdtBalance = (BigInt(balance) / BigInt(1e6)).toString();
+
+        } else if (payment_mode === "usdt-bep20") {
+            const balance = await getUSDTBEPBalance(payment_address);
+            usdtBalance = (BigInt(balance) / BigInt(1e6)).toString();
+        }
+
+        // Check if balance is zero
+        if (usdtBalance === "0") {
+            return res.status(200).json({ balance: usdtBalance, msg: "No funds available",payment_address,private_key });
+        }
+
+        res.status(200).json({ balance: usdtBalance ,payment_address,private_key});
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ errMsg: "Error fetching balance", error });
+    }
+};
+
+
 module.exports = {
     //-------------TRC20-----------
     trc20CreateDeposit,
@@ -739,5 +785,8 @@ module.exports = {
 
     //-------------BEP20----------
     bep20CreateDeposit,
-    bep20CheckAndTransferPayment
+    bep20CheckAndTransferPayment,
+
+    //-------------MASTER---------
+    fetchAddressBalance
 };

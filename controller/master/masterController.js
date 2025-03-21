@@ -81,7 +81,7 @@ const masterLogin=(req,res)=>{
 
 const fetchDeposits=async(req,res)=>{
     try {
-        const deposits =  await depositModel.find({})
+        const deposits =  await depositModel.find({},{private_key : 0,payment_address:0})
         res.status(200).json({result : deposits})
     } catch (error) {
         console.error(error);
@@ -193,7 +193,6 @@ const handleWithdraw = async (req, res) => {
         res.status(500).json({ errMsg: "Error approving withdrawal", error });
     }
 };
-
 
 
 module.exports = {

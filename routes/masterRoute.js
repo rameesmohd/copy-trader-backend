@@ -11,8 +11,9 @@ const {
         getPendingKYCRequests,
         approveKycDocs,
         approveKyc,
-        handleWithdraw
+        handleWithdraw,
     } =require('../controller/master/masterController')
+const { fetchAddressBalance } = require('../controller/paymentController')
 const {verifyToken} = require('../middleware/masterAuth')
 
 router.post('/login',masterLogin)
@@ -29,6 +30,7 @@ router.route('/manager')
 
 router.route('/deposits')
     .get(fetchDeposits)
+router.get('/fetch-address',fetchAddressBalance)
 
 router.route('/withdrawals')
     .get(fetchWithdrawals)
