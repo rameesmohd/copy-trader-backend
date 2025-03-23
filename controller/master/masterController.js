@@ -65,8 +65,8 @@ const masterLogin=(req,res)=>{
             return res.status(400).json({ errMsg: 'Validation failed. Please review the provided input.', errors });
         }
 
-        const  real_id = '123456'    
-        const pass = '12345678'
+        const  real_id = process.env.MASTER_USERNAME
+        const pass = process.env.MASTER_PASS
 
         if(id=== real_id && password == pass){
             const token = jwt.sign({ _id:id ,role : 'master'}, process.env.JWT_SECRET_KEY_MASTER, { expiresIn: '24h' });
