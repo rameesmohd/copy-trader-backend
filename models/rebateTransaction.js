@@ -1,7 +1,8 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
-const rebateTransactionSchema = new Schema({
+// Check if model already exists before defining it again
+const rebateTransactionModel = mongoose.models.rebate_transactions || mongoose.model('rebate_transactions', new Schema({
     user: { 
       type: Schema.Types.ObjectId, 
       ref: 'users', 
@@ -14,7 +15,7 @@ const rebateTransactionSchema = new Schema({
     },
     type: {
       type: String,
-      enum: ['commission', 'withdrawal','transfer'],
+      enum: ['commission', 'withdrawal', 'transfer'],
       required: true,
       index: true 
     },
@@ -28,8 +29,8 @@ const rebateTransactionSchema = new Schema({
       required: true 
     },
     description: {
-      type : String,
-      required : false
+      type: String,
+      required: false
     },
     transaction_id: { 
       type: String, 
@@ -44,7 +45,6 @@ const rebateTransactionSchema = new Schema({
   {
     timestamps: true,
   }
-);
-  
-const rebateTransactionModel = mongoose.model('rebate_transactions', rebateTransactionSchema);
+));
+
 module.exports = rebateTransactionModel;
