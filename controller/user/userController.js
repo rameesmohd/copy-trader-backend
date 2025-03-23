@@ -6,7 +6,7 @@ const jwt = require("jsonwebtoken");
 const userTransactionModel = require('../../models/userTransaction');
 const mongoose = require("mongoose");
 const depositModel = require('../../models/deposit')
-const rebateTransactionModel = require('../../models/RebateTransaction');
+const rebateTransactionModel = require('../../models/rebateTransaction');
 const managerTradeModel = require('../../models/managerTrades')
 
 
