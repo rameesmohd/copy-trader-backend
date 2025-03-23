@@ -41,9 +41,9 @@ const createRollover = async()=>{
   await processRollover(rollover._id);
 }
 
-//Schedule daily rollover at midnight UTC
-cron.schedule("*/15 * * * *", async () => {
-//cron.schedule("0 0 * * *", async () => {
+// Schedule daily rollover at midnight UTC
+// cron.schedule("*/15 * * * *", async () => {
+cron.schedule("0 0 * * *", async () => {
   console.log("Running daily rollover...");
   createRollover()  
 });
