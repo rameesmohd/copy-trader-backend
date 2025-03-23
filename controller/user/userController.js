@@ -197,7 +197,7 @@ const fetchUserTransactions = async (req, res) => {
 
 const { Resend } = require("resend");
 const ticketModel = require('../../models/tickets');
-const forgetPasswordModel = require('../../models/forgetpassword');
+const forgetPasswordModel = require('../../models/forgetPassword');
 const resend = new Resend(process.env.RESEND_SECRET_KEY);
 const randomSixDigitNumber = Math.floor(100000 + Math.random() * 900000);
 
