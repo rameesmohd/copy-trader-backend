@@ -274,15 +274,15 @@ const trc20WithdrawFromMainWallet = async (req, res) => {
         );
 
         // -------------------------Check sender's balance-------------------------------------------
-        const usdtBalance = await usdtContract.methods.balanceOf(process.env.MAIN_ADDRESS).call();
+        // const usdtBalance = await usdtContract.methods.balanceOf(process.env.MAIN_ADDRESS).call();
 
-        const balanceInSun = usdtBalance.toString();
+        // const balanceInSun = usdtBalance.toString();
         
-        const balance = parseFloat(tronWebInstance.fromSun(balanceInSun));
+        // const balance = parseFloat(tronWebInstance.fromSun(balanceInSun));
         
-        const amountInSun = tronWebInstance.toSun(amount_to_withdraw);
+        // const amountInSun = tronWebInstance.toSun(amount_to_withdraw);
         
-        console.log('our balance : ' , balance);
+        // console.log('our balance : ' , balance);
 
         // if (balance < amount_to_withdraw) {
         //     return res.status(200).json({ result : { userData : updatedUser ,withdrawRequest : newPendingWithdrawal}});
@@ -294,31 +294,31 @@ const trc20WithdrawFromMainWallet = async (req, res) => {
         // }
 
         // Send transaction
-        tronWebInstance.setPrivateKey(process.env.PRIVATE_KEY);
-        const transaction = 'test----------------'
+        // tronWebInstance.setPrivateKey(process.env.PRIVATE_KEY);
+        // const transaction = 'test----------------'
         // await usdtContract.methods.transfer(recipient, amountInSun).send({
         //     feeLimit: 28900000 // TRX
         // });
 
-        console.log('main wallet transaction :',transaction);
+        // console.log('main wallet transaction :',transaction);
 
-        if(transaction){
-            // Update withdrawal and transaction status to 'success'
-                const withdraw =  await withdrawalModel.findByIdAndUpdate(
-                    {_id: newPendingWithdrawal._id}, 
-                    { status: 'approved' , crypto_txid : transaction},
-                    { new: true }
-                );
+        // if(transaction){
+        //     // Update withdrawal and transaction status to 'success'
+        //         const withdraw =  await withdrawalModel.findByIdAndUpdate(
+        //             {_id: newPendingWithdrawal._id}, 
+        //             { status: 'approved' , crypto_txid : transaction},
+        //             { new: true }
+        //         );
             
-            await userTransactionModel.findOneAndUpdate(
-                { _id : newUserTrasaction._id},
-                { $set: { status: 'approved' } },
-                { new: true}
-            );
-            return res.status(200).json({ result : { userData : updatedUser ,withdrawRequest : withdraw}});
-        }else {
+        //     await userTransactionModel.findOneAndUpdate(
+        //         { _id : newUserTrasaction._id},
+        //         { $set: { status: 'approved' } },
+        //         { new: true}
+        //     );
+        //     return res.status(200).json({ result : { userData : updatedUser ,withdrawRequest : withdraw}});
+        // }else {
             return res.status(200).json({ result : { userData : updatedUser ,withdrawRequest: newPendingWithdrawal}});
-        }
+        // }
     } catch (error) {
         console.log(error);
         res.status(500).send('Error sending transaction: ' + error.message);
