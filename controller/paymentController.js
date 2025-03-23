@@ -478,8 +478,7 @@ const Web3 = require('web3');
 const { ethers } = require("ethers");
 const USDT_ADDRESS = "0x55d398326f99059ff775485246999027b3197955"; // BEP-20 USDT contract
 
-
-const url = 'https://rpc.ankr.com/bsc'
+const url = 'https://rpc.ankr.com/bsc/df8586d721b44480dd271d33733e8f37ae217c54d0cf906769e6abe6345ead7e'  // url string
 
 const web3 = new Web3(new Web3.providers.HttpProvider(url));
 
