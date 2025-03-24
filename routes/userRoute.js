@@ -40,16 +40,16 @@ const {
 const upload = require('../config/multer');
 const { fetchCountryList } = require('../controller/common/fetchCountryList');
 
-router.post('/upload', upload.single('file'), (req, res) => {
-    if (!req.file) {
-      return res.status(400).send({ status: 'fail', message: 'No file uploaded' });
-    }
-    // The file URL from Cloudinary
-    const fileUrl = req.file.path;
+// router.post('/upload', upload.single('file'), (req, res) => {
+//     if (!req.file) {
+//       return res.status(400).send({ status: 'fail', message: 'No file uploaded' });
+//     }
+//     // The file URL from Cloudinary
+//     const fileUrl = req.file.path;
     
-    // Send the Cloudinary URL back to the client
-    res.send({ status: 'success', fileUrl: fileUrl });
-});
+//     // Send the Cloudinary URL back to the client
+//     res.send({ status: 'success', fileUrl: fileUrl });
+// });
 
 router.route('/register')
     .post(registerUser)
@@ -100,7 +100,9 @@ router.route('/ticket')
 
 router.post('/kyc/otp',handleEmailVerificationOtp)
 
-router.post('/kyc',handleKycProofSubmit)
+router.post('/kyc-identity',upload.array("identityProof", 5),handleKycProofSubmit)
+router.post('/kyc-residential',upload.array("residentialProof", 5),handleKycProofSubmit)
+
 
 //---------------------- wallet deposit & withdraws-------------------//
 

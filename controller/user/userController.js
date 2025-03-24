@@ -8,7 +8,8 @@ const mongoose = require("mongoose");
 const depositModel = require('../../models/deposit')
 const rebateTransactionModel = require('../../models/rebateTransaction');
 const managerTradeModel = require('../../models/managerTrades')
-
+const cloudinary = require("../../config/cloudinary");
+const fs = require("fs");
 
 const {
     forgotMail,
@@ -239,11 +240,38 @@ const handleEmailVerificationOtp=async(req,res)=>{
     }
 }
 
+const uploadToCloudinary = (filePath) => {
+    return new Promise((resolve, reject) => {
+      cloudinary.uploader.upload(
+        filePath,
+        { folder: "kyc_documents", resource_type: "auto" },
+        (error, result) => {
+          if (error) {
+            reject(error);
+          } else {
+            // 🔹 Delete local file after successful upload
+            fs.unlink(filePath, (err) => {
+              if (err) console.error("Failed to delete file:", err);
+            });
+            resolve(result.secure_url);
+          }
+        }
+      );
+    });
+};
+
 const handleKycProofSubmit=async(req,res)=>{
     try {
         console.log(req.body);
-        const { type,identityProofUrls,residentialProofUrl,user_id } = req.body
+        console.log(req.files);
+        
+        const { type,user_id } = req.body
         if (type === "identity") {
+            // 🔹 Upload each file to Cloudinary
+            const identityProofUrls = await Promise.all(
+                req.files.map(async (file) => await uploadToCloudinary(file.path))
+            );
+
             const updatedUser = await userModel.findOneAndUpdate(
                 { _id: user_id },
                 {
@@ -257,11 +285,16 @@ const handleKycProofSubmit=async(req,res)=>{
             );
             return res.status(200).json({ result: updatedUser });
         } else if(type==="residential"){
+            // 🔹 Upload each file to Cloudinary
+            const residentialProofUrls = await Promise.all(
+                req.files.map(async (file) => await uploadToCloudinary(file.path))
+            );
+
             const updatedUser =await userModel.findOneAndUpdate(
                     { _id: user_id},
                     {
                         $set: {
-                            residential_proof: residentialProofUrl,
+                            residential_proof: residentialProofUrls,
                             residential_proof_status: "submitted"
                         },
                         $inc: { kyc_step: 1 }
