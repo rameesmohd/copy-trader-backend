@@ -24,7 +24,7 @@ const header = () => `
                       style="
                         border-collapse: collapse;
                         border-spacing: 0px;
-                        background-color: #ffffff;
+                        background-color:rgb(0, 0, 0) !important;;
                         width: 600px;
                       "
                     >
@@ -37,10 +37,10 @@ const header = () => `
                             padding-left: 0;
                             margin: 0;
                            
-                            background-color: #000000;
+                            background-color: #000000 !important;;
                           "
                         >
-                          <table width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; border-spacing: 0px;">
+<table width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; border-spacing: 0px;">
   <tbody>
     <tr>
       <td valign="top" align="center" style="padding: 0; margin: 0; width: 600px;">

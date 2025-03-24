@@ -403,7 +403,7 @@ const forgetPassGenerateOTP=async(req,res)=>{
               from: process.env.WEBSITE_MAIL,
               to: user.email,
               subject:"Verify email",
-              html: verification(OTP=generateOTP,user.first_name),
+              html: forgotMail(OTP=generateOTP,user.first_name),
             });
         } catch (emailError) {
             console.error("Error sending email:", emailError);
