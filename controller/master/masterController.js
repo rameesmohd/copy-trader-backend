@@ -164,7 +164,7 @@ const approveKyc = async (req, res) => {
         }
         
         if (user.is_email_verified && user.identify_proof_status === 'verified' && user.residential_proof_status === 'verified') {
-            await userModel.findByIdAndUpdate(_id, { is_kyc_verified: true });
+            await userModel.findByIdAndUpdate(_id, { is_kyc_verified: true ,kyc_step: 4});
 
             return res.status(200).json({ msg: "Approved successfully" });
         }

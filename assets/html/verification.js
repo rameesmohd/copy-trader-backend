@@ -5,20 +5,20 @@ const verification = (otp,userName) =>
     <h2 style="color: #333333; text-align: center;">Dear ${userName}!</h2>
     <p style="color: #555555; text-align: center;">Your email verification OTP is :</p>
     <div style="text-align: center; margin: 20px 0;">
-      <a href="#" style="display: inline-block; padding: 10px 20px; color: white; background-color: #000; border-radius: 5px; text-decoration: none;">${otp}</a>
+      <div style="display: inline-block; padding: 10px 20px; color: white; background-color: #000; border-radius: 5px; text-decoration: none;">${otp}</div>
     </div>
-    <p style="color: #555555; text-align: center;">If you verified for this account, you can safely ignore this email.</p>
+    <p style="color: #555555; text-align: center;">If already verified for this account, you can safely ignore this email.</p>
   </div>`);
 
-const forgotMail = (verificationLink, userName) =>
+const forgotMail = (otp,userName) =>
   emailTemplate(`<div style="max-width: 600px; margin: auto; background-color: #ffffff; padding: 20px; border-radius: 8px;">
-          <h2 style="color: #333333; text-align: center;">Welcome to Real Trade Capital, ${userName}!</h2>
-          <p style="color: #555555; text-align: center;">To create new password click the button below:</p>
-          <div style="text-align: center; margin: 20px 0;">
-            <a href="${verificationLink}" style="display: inline-block; padding: 10px 20px; color: white; background-color: #000; border-radius: 5px; text-decoration: none;">New Password</a>
-          </div>
-          <p style="color: #555555; text-align: center;">If you did not sign up for this account, you can safely ignore this email.</p>
-          </div>`);
+    <h2 style="color: #333333; text-align: center;">Dear ${userName}!</h2>
+    <p style="color: #555555; text-align: center;">Your reset password OTP is :</p>
+    <div style="text-align: center; margin: 20px 0;">
+      <div style="display: inline-block; padding: 10px 20px; color: white; background-color: #000; border-radius: 5px; text-decoration: none;">${otp}</div>
+    </div>
+    <p style="color: #555555; text-align: center;">If you did not request a password reset, please disregard this email.</p>
+  </div>`);
 const purchaseConfirmation = (userName) =>
   emailTemplate(`<table
                 cellspacing="0"

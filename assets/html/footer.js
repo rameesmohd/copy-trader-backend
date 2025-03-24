@@ -134,7 +134,7 @@ const footer = () => `
                                                         "
                                                       >
                                                         <strong
-                                                          >Blufx Copier</strong
+                                                          >PipVora</strong
                                                         >
                                                       </h3>
                                                     </td>
@@ -166,14 +166,14 @@ const footer = () => `
                                                         always available to help
                                                         at&nbsp;<u
                                                           ><a
-                                                            href="mailto:support@blufxcopier.com"
+                                                            href="mailto:support@pipvora.com"
                                                             style="
                                                               text-decoration: underline;
                                                               color: #333333;
                                                               font-size: 16px;
                                                             "
                                                             target="_blank"
-                                                            >support@blufxcopier.com</a
+                                                            >support@pipvora.com</a
                                                           ></u
                                                         >&nbsp;or through the
                                                         support page on the
@@ -219,7 +219,7 @@ const footer = () => `
                                                           font-size: 16px;
                                                         "
                                                       >
-                                                        Blufx Team
+                                                        PipVora Team
                                                       </p>
                                                     </td>
                                                   </tr>
@@ -267,54 +267,7 @@ const footer = () => `
                                 "
                               >
                                 <tbody>
-                                  <tr>
-                                    <td
-                                      align="left"
-                                      bgcolor="#000000"
-                                      style="
-                                        padding: 5px;
-                                        margin: 0;
-                                        background-color: #0019a7;
-                                      "
-                                    >
-                                      <table
-                                        cellpadding="0"
-                                        cellspacing="0"
-                                        align="left"
-                                        style="
-                                          border-collapse: collapse;
-                                          border-spacing: 0px;
-                                          float: left;
-                                        "
-                                      >
-                                        <tbody>
-                                          <tr>
-                                            <td
-                                              align="center"
-                                              valign="top"
-                                              style="
-                                                padding: 0;
-                                                margin: 0;
-                                                width: 270px;
-                                              "
-                                            >
-                                              <table
-                                                cellpadding="0"
-                                                cellspacing="0"
-                                                width="100%"
-                                                role="presentation"
-                                                style="
-                                                  border-collapse: collapse;
-                                                  border-spacing: 0px;
-                                                "
-                                              >
-                                              </table>
-                                            </td>
-                                          </tr>
-                                        </tbody>
-                                      </table>
-                                    </td>
-                                  </tr>
+                               
                                 </tbody>
                               </table>
                             </td>
