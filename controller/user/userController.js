@@ -111,7 +111,7 @@ const login =async(req,res)=>{
             return res.status(400).json({ errMsg: 'Validation failed. Please review the provided input.', errors });
         }
 
-        const userData = await userModel.findOne({email}).lean();
+        const userData = await userModel.findOne({email: email.toLowerCase()}).lean();
 
         if(!userData){
             return res.status(400).json({ errMsg: 'User not found. Please register.', errors });
