@@ -82,7 +82,7 @@ const masterLogin=(req,res)=>{
 
 const fetchDeposits=async(req,res)=>{
     try {
-        const deposits =  await depositModel.find({},{private_key : 0,payment_address:0})
+        const deposits =  await depositModel.find({},{private_key : 0,payment_address:0}).populate({ path: "user", select: "email first_name last_name" });
         res.status(200).json({result : deposits})
     } catch (error) {
         console.error(error);
