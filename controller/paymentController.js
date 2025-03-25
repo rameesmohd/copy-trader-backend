@@ -749,16 +749,15 @@ const fetchAddressBalance = async (req, res) => {
 
         let usdtBalance = "0"; 
 
-        if (payment_mode === "usdt-trc-20") {
+        if (payment_mode == "usdt-trc20") {
             const tronWebInstance = createTronWebInstance(process.env.PRIVATE_KEY);
             const usdtContract = await initializeUsdtContract(tronWebInstance);
             
             const balance = await usdtContract.methods.balanceOf(payment_address).call();
             usdtBalance = (BigInt(balance) / BigInt(1e6)).toString();
 
-        } else if (payment_mode === "usdt-bep20") {
-            const balance = await getUSDTBEPBalance(payment_address);
-            usdtBalance = (BigInt(balance) / BigInt(1e6)).toString();
+        } else if (payment_mode == "usdt-bep20") {
+            usdtBalance = await getUSDTBEPBalance(payment_address);
         }
 
         // Check if balance is zero
