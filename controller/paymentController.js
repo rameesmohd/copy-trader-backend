@@ -34,7 +34,7 @@ const trc20CreateDeposit = async (req, res) => {
         const { user_id, payment_mode, amount } = req.query;
 
         if (amount < 50) {
-            return res.status(400).json({ message: 'Invalid amount' });
+            return res.status(400).json({ errMsg: 'Invalid amount' });
         }
 
         const alreadyGenerated = await depositsModel.findOne({ user: user_id,payment_mode:"usdt-trc20",status:"pending"});
@@ -47,7 +47,7 @@ const trc20CreateDeposit = async (req, res) => {
 
             const user = await userModel.findOne({ _id: user_id });
             if (!user) {
-                return res.status(402).json({ message: 'User not found' });
+                return res.status(402).json({ errMsg: 'User not found' });
             }
 
             const newDeposit = new depositsModel({
@@ -109,7 +109,7 @@ const trc20CheckAndTransferPayment = async (req,res) => {
         const balance = parseFloat(tronWebInstance.fromSun(balanceInSun));
         console.log('balance :',balance);
 
-        if (balance <= pendingPayment.amount) {
+        if (balance >= pendingPayment.amount) {
             //-------------------------DB_Operations---------------------------//
             const proccessingPayment = await depositsModel.findOneAndUpdate(
                 { _id : order_id},
@@ -519,7 +519,7 @@ const bep20CreateDeposit = async (req, res) => {
         const { user_id, payment_mode, amount } = req.query;
 
         if (amount < 50) {
-            return res.status(400).json({ message: 'Invalid amount' });
+            return res.status(400).json({ errMsg: 'Invalid amount' });
         }
 
         const alreadyGenerated = await depositsModel.findOne({ user: user_id,payment_mode: "usdt-bep20", status: 'pending' });
@@ -529,7 +529,7 @@ const bep20CreateDeposit = async (req, res) => {
 
             const user = await userModel.findOne({ _id: user_id });
             if (!user) {
-                return res.status(402).json({ message: 'User not found' });
+                return res.status(402).json({ errMsg: 'User not found' });
             }
 
             const newDeposit = new depositsModel({
@@ -599,7 +599,7 @@ const bep20CheckAndTransferPayment = async (req,res) => {
         const balance = await getUSDTBEPBalance(pendingPayment.payment_address)
         console.log('balance :',balance);
 
-        if (balance <= pendingPayment.amount) {
+        if (balance >= pendingPayment.amount) {
             //-------------------------DB_Operations---------------------------//
             const proccessingPayment = await depositsModel.findOneAndUpdate(
                 { _id : order_id},
