@@ -68,10 +68,11 @@ const masterLogin=(req,res)=>{
         const  real_id = process.env.MASTER_USERNAME
         const pass = process.env.MASTER_PASS
 
-        if(id=== real_id && password == pass){
+        if(id== real_id && password == pass){
             const token = jwt.sign({ _id:id ,role : 'master'}, process.env.JWT_SECRET_KEY_MASTER, { expiresIn: '24h' });
             return res.status(200).json({token})
         }
+        return res.status(400).json({})
     } catch (error) {
         console.error(error);
         res.status(500).json({ errMsg: 'Error while login to master, please try again', error: error.message });
