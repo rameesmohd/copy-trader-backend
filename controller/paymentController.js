@@ -569,7 +569,7 @@ const bep20CreateDeposit = async (req, res) => {
 const getUSDTBEPBalance = async (walletAddress) => {
     try {
         const balance = await usdtContract.methods.balanceOf(walletAddress).call();
-        return Number(balance) / 10 ** 6; // Convert to correct USDT format
+        return Number(balance) / 10 ** 18; // Convert using 18 decimal places
     } catch (error) {
         console.error("Error fetching balance:", error);
         return 0;
