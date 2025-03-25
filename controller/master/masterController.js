@@ -3,6 +3,7 @@ const managerModel = require('../../models/manager')
 const depositModel = require('../../models/deposit')
 const withdrawModel = require('../../models/withdrawal')
 const jwt = require("jsonwebtoken");
+const userTransactionModel = require('../../models/userTransaction');
 
 const fetchUser =async(req,res)=>{
     try {
@@ -188,6 +189,7 @@ const handleWithdraw = async (req, res) => {
 
         // Update withdrawal status
         await withdrawModel.updateOne({ _id }, { $set: { status } });
+        await userTransactionModel.updateOne({related_transaction : _id},{$set: { status }})
 
         return res.status(200).json({ msg: `Withdrawal ${status} successfully` });
     } catch (error) {

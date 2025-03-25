@@ -32,7 +32,7 @@ const {
 const { 
     trc20CreateDeposit,
     trc20CheckAndTransferPayment,
-    trc20WithdrawFromMainWallet, 
+    withdrawFromMainWallet, 
     bep20CreateDeposit,
     bep20CheckAndTransferPayment
 } = require('../controller/paymentController')
@@ -114,8 +114,8 @@ router.route('/deposit/usdt-bep20')
     .get(bep20CreateDeposit) 
     .post(bep20CheckAndTransferPayment)
     
-router.route('/withdraw/usdt-trc-20')
-    .post(trc20WithdrawFromMainWallet)
+router.route('/withdraw')
+    .post(withdrawFromMainWallet)
 
 module.exports=router
 

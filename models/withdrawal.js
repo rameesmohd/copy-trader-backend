@@ -13,7 +13,7 @@ const withdrawalSchema = new Schema({
   },
   payment_mode : {
       type: String,
-      enum : ["usdt-trc20"],
+      enum : ["usdt-trc20","usdt-bep20","usdt-erc20"],
       required: true
   },
   crypto_txid : {

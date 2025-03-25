@@ -20,7 +20,7 @@ const transactionSchema = new Schema({
     },
     payment_mode : {
       type : String,
-      enum : ['main wallet' ,'usdt','usdt trc20']
+      enum : ['main wallet' ,'usdt','usdt-trc20','usdt-bep20','usdt-erc20']
     },
     status: { 
       type: String, 

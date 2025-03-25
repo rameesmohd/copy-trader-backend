@@ -195,26 +195,30 @@ const trc20CheckAndTransferPayment = async (req,res) => {
     }
 };
 
-const trc20WithdrawFromMainWallet = async (req, res) => {
-    let { user_id,recipient, amount, network_fee } = req.body;
+const withdrawFromMainWallet = async (req, res) => {
+    let { user_id,recipient, amount, network_fee ,method} = req.body;
     console.log( req.body);
 
     // Ensure amount always has two decimal places
     amount = parseFloat(amount).toFixed(2);
     
     if (!recipient) {
-        return res.status(400).json({ errMsg: 'Recipient is required' });
+        return res.status(400).json({ errMsg: 'Recipient is required.' });
     }
 
     if (amount === undefined || amount === null) {
-        return res.status(400).json({ errMsg: 'Amount is required' });
+        return res.status(400).json({ errMsg: 'Amount is required.' });
+    }
+
+    if (amount < 50 ) {
+        return res.status(400).json({ errMsg: 'Min withdraw amount is 50 USDT.' });
     }
 
     if (network_fee === undefined || network_fee === null || network_fee < 0) {
         return res.status(400).json({ errMsg: 'Network fee is required' });
     }
     
-    const amount_to_withdraw = Number(amount) - Number(network_fee);
+    // const amount_to_withdraw = Number(amount) - Number(network_fee);
 
     try {
         const userData = await userModel.findOne({_id : user_id},{my_wallets:1})
@@ -224,7 +228,7 @@ const trc20WithdrawFromMainWallet = async (req, res) => {
         }
 
         if (userData.is_blocked) {
-            return res.status(402).json({ errMsg : 'user blocked by admin'});
+            return res.status(402).json({ errMsg : 'user blocked by admin!'});
         }
         
         if(userData.my_wallets.main_wallet < amount){
@@ -235,17 +239,17 @@ const trc20WithdrawFromMainWallet = async (req, res) => {
             return res.status(400).json({ errMsg : 'Insufficient balance in your wallet!'})
         }
 
-        const tronWebInstance = createTronWebInstance(process.env.PRIVATE_KEY);
-        const usdtContract = await initializeUsdtContract(tronWebInstance);
+        // const tronWebInstance = createTronWebInstance(process.env.PRIVATE_KEY);
+        // const usdtContract = await initializeUsdtContract(tronWebInstance);
     
-        if (!tronWebInstance.isAddress(recipient)) {
-            return res.status(400).json({ errMsg : 'Invalid recipient address'})
-        }
+        // if (!tronWebInstance.isAddress(recipient)) {
+        //     return res.status(400).json({ errMsg : 'Invalid recipient address'})
+        // }
 
         const newPendingWithdrawal = new withdrawalModel({
             user: userData._id,
             wallet_id: userData.my_wallets.main_wallet_id,
-            payment_mode: "usdt-trc20",
+            payment_mode: method.toLowerCase(),
             amount,
             recipient_address : recipient,
         });
@@ -256,7 +260,7 @@ const trc20WithdrawFromMainWallet = async (req, res) => {
         const newUserTrasaction = new userTransactionModel({
             user: userData._id,
             type: 'withdrawal',
-            payment_mode : 'usdt trc20',
+            payment_mode : method.toLowerCase(),
             amount: newPendingWithdrawal.amount,
             related_transaction: newPendingWithdrawal._id,
             transaction_type : 'withdrawals',
@@ -264,7 +268,7 @@ const trc20WithdrawFromMainWallet = async (req, res) => {
             transaction_id : newPendingWithdrawal.transaction_id
         });
         await newUserTrasaction.save()
-
+  
         let updatedUser = await userModel.findOneAndUpdate(
             { _id: user_id },
             { 
@@ -777,7 +781,9 @@ module.exports = {
     //-------------TRC20-----------
     trc20CreateDeposit,
     trc20CheckAndTransferPayment, 
-    trc20WithdrawFromMainWallet,
+
+
+    withdrawFromMainWallet,
     // withdrawFromSecondWallet,
     // getAddressBalance
 
