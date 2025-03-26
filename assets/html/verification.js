@@ -2,7 +2,7 @@ const { emailTemplate } = require("./emailTemplates");
 
 const verification = (otp,userName) =>
   emailTemplate(`<div style="max-width: 600px; margin: auto; background-color: #ffffff; padding: 20px; border-radius: 8px;">
-    <h2 style="color: #333333; text-align: center;">Dear ${userName}!</h2>
+    <h4 style="color: #333333; text-align: center;">Dear ${userName},</h4>
     <p style="color: #555555; text-align: center;">Your email verification OTP is :</p>
     <div style="text-align: center; margin: 20px 0;">
       <div style="display: inline-block; padding: 10px 20px; color: white; background-color: #000; border-radius: 5px; text-decoration: none;">${otp}</div>
@@ -12,7 +12,7 @@ const verification = (otp,userName) =>
 
 const forgotMail = (otp,userName) =>
   emailTemplate(`<div style="max-width: 600px; margin: auto; background-color: #ffffff; padding: 20px; border-radius: 8px;">
-    <h2 style="color: #333333; text-align: center;">Dear ${userName}!</h2>
+    <h4 style="color: #333333; text-align: center;">Dear ${userName},</h4>
     <p style="color: #555555; text-align: center;">Your reset password OTP is :</p>
     <div style="text-align: center; margin: 20px 0;">
       <div style="display: inline-block; padding: 10px 20px; color: white; background-color: #000; border-radius: 5px; text-decoration: none;">${otp}</div>
