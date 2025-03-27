@@ -5,13 +5,14 @@ const withdrawModel = require('../../models/withdrawal')
 const jwt = require("jsonwebtoken");
 const userTransactionModel = require('../../models/userTransaction');
 const { default: mongoose } = require('mongoose');
+const {fetchAndUseLatestRollover} = require('../rolloverController')
 
 const fetchUser =async(req,res)=>{
     try {
         const result =  await userModel.find({},{password : 0})
         console.log(result);
-        
-        return res.status(200).json({result :result})
+        const latestRollover = await fetchAndUseLatestRollover()
+        return res.status(200).json({result :result,rollover : latestRollover})
     } catch (error) {
         res.status(500).json({ errMsg: 'Error fetching users' });
     }
@@ -188,10 +189,20 @@ const handleWithdraw = async (req, res) => {
             return res.status(400).json({ errMsg: "Invalid status value" });
         }
 
-        // Update withdrawal status
-        await withdrawModel.updateOne({ _id }, { $set: { status } });
-        await userTransactionModel.updateOne({related_transaction : _id},{$set: { status }})
+        const withdrawData = await withdrawModel.findOne({_id,status : 'pending'})
 
+        if(!withdrawData){
+           return res.status(400).json({ errMsg: "Data not found", error });
+        }
+
+        // Update withdrawal status
+        await withdrawModel.updateOne({ _id:withdrawData._id }, { $set: { status } });
+        await userTransactionModel.updateOne({related_transaction : withdrawData._id},{$set: { status }})
+        if(status=='rejected'){
+            await userModel.updateOne({_id:withdrawData.user},
+                { $inc: { 'my_wallets.main_wallet': withdrawData.amount }}
+            )
+        }
         return res.status(200).json({ msg: `Withdrawal ${status} successfully` });
     } catch (error) {
         res.status(500).json({ errMsg: "Error approving withdrawal", error });
