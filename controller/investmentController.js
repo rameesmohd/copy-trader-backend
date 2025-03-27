@@ -140,136 +140,134 @@ const fetchAndUseLatestRollover = async () => {
 
 const makeDeposit = async (req, res) => {
   const session = await mongoose.startSession();
-  session.startTransaction();
-  
+
   try {
-    const { userId, managerId, amount, ref } = req.body;
-    
-    if (!userId || !managerId || amount <= 0) {
-      return res.status(400).json({ errMsg: 'Invalid input data!' });
-    }
+    await session.withTransaction(async () => {
+      const { userId, managerId, amount, ref } = req.body;
 
-    // Fetch user and manager in parallel
-    const [user, manager] = await Promise.all([
-      userModel.findById(userId).session(session),
-      managerModel.findById(managerId).session(session),
-    ]);
+      if (!userId || !managerId || amount <= 0) {
+        throw new Error("Invalid input data!");
+      }
 
-    if (!user || !manager) {
-      return res.status(400).json({ errMsg: 'Invalid credentials!' });
-    }
+      // Fetch user and manager
+      const [user, manager] = await Promise.all([
+        userModel.findById(userId).session(session),
+        managerModel.findById(managerId).session(session),
+      ]);
 
-    // Validate balance
-    if (amount > user.my_wallets.main_wallet) {
-      return res.status(400).json({ errMsg: 'Insufficient balance.' });
-    }
+      if (!user || !manager) {
+        throw new Error("Invalid credentials!");
+      }
 
-    // Validate minimum investment
-    if (amount < manager.min_initial_investment) {
-      return res.status(400).json({ errMsg: `Minimum investment is ${manager.min_initial_investment} USD.` });
-    }
+      if (amount > user.my_wallets.main_wallet) {
+        throw new Error("Insufficient balance.");
+      }
 
-    // Deduct user balance atomically
-    await userModel.findByIdAndUpdate(userId, {
-      $inc: { "my_wallets.main_wallet": -amount }
-    }, { session });
+      if (amount < manager.min_initial_investment) {
+        throw new Error(`Minimum investment is ${manager.min_initial_investment} USD.`);
+      }
 
-    // Count investments for unique inv_id
-    const invCount = await investmentModel.countDocuments().session(session);
+      // Deduct user balance
+      await userModel.findByIdAndUpdate(userId, {
+        $inc: { "my_wallets.main_wallet": -amount },
+      }, { session });
 
-    let inviter;
-    if (ref) {
-      inviter = await userModel.findOne({ user_id: ref }).session(session);
-    } else if (user.referral.referred_by){
-      inviter = user.referral.referred_by
-    }
+      // Count investments
+      const invCount = await investmentModel.countDocuments({}, { session });
 
-    // Create investment entry (DO NOT reference _id yet)
-    const investment = new investmentModel({
-      inv_id: 21000 + invCount,
-      user: user._id,
-      manager: manager._id,
-      manager_nickname: manager.nickname,
-      total_funds: 0,
-      trading_interval: manager.trading_interval,
-      min_initial_investment: manager.min_initial_investment,
-      min_top_up: manager.min_top_up,
-      trading_liquidity_period: manager.trading_liquidity_period,
-      total_deposit: amount,
-      manager_performance_fee: manager.performance_fees_percentage,
-      min_withdrawal: manager.min_withdrawal,
-      deposits: [],
-      referred_by : inviter ? inviter._id : null
-    });
+      // Find inviter
+      let inviter = null;
+      if (ref) {
+        inviter = await userModel.findOne({ user_id: ref }).session(session);
+      } else if (user.referral.referred_by) {
+        inviter = user.referral.referred_by;
+      }
 
-    await investment.save({ session }); // ✅ Save first
+      // Create investment entry
+      const investment = await investmentModel.create(
+        [{
+          inv_id: 21000 + invCount,
+          user: user._id,
+          manager: manager._id,
+          manager_nickname: manager.nickname,
+          total_funds: 0,
+          trading_interval: manager.trading_interval,
+          min_initial_investment: manager.min_initial_investment,
+          min_top_up: manager.min_top_up,
+          trading_liquidity_period: manager.trading_liquidity_period,
+          total_deposit: 0,
+          manager_performance_fee: manager.performance_fees_percentage,
+          min_withdrawal: manager.min_withdrawal,
+          deposits: [],
+          referred_by: inviter ? inviter._id : null,
+        }],
+        { session }
+      );
 
-    // Handle Referral (If Exists)
-    if (inviter) {
+      // Handle Referral
       if (inviter && inviter._id.toString() !== user._id.toString()) {
-        // Now investment._id exists, so we can push it
         await userModel.findByIdAndUpdate(inviter._id, {
           $push: {
             "referral.investments": {
-              investment_id: investment._id,
-              rebate_recieved: 0,  // Adjust rebate logic if needed
-            }
-          }
+              investment_id: investment[0]._id,
+              rebate_received: 0,
+            },
+          },
         }, { session });
       }
-    }
 
-    // Create user transaction
-    const userTransaction = new userTransactionModel({
-      user: user._id,
-      investment: investment._id,
-      type: "transfer",
-      status: "approved",
-      amount: amount,
-      from: `WALL${user.my_wallets.main_wallet_id || "UNKNOWN"}`,
-      to: `INV${investment.inv_id || "UNKNOWN"}`,
-      description: `Transferred to investment manager ${manager.nickname}.`,
-      transaction_type: "investment_transactions",
-    });
-    await userTransaction.save({ session });
+      // Create transactions
+      const userTransaction = new userTransactionModel({
+        user: user._id,
+        investment: investment[0]._id,
+        type: "transfer",
+        status: "approved",
+        amount: amount,
+        from: `WALL${user.my_wallets.main_wallet_id || "UNKNOWN"}`,
+        to: `INV${investment[0].inv_id || "UNKNOWN"}`,
+        description: `Transferred to investment manager ${manager.nickname}.`,
+        transaction_type: "investment_transactions",
+      });
 
-    // Create investment transaction
-    const investmentTransaction = new investmentTransactionModel({
-      user: user._id,
-      investment: investment._id,
-      manager: manager._id,
-      type: "deposit",
-      status: "pending",
-      from: `WALL${user.my_wallets.main_wallet_id || "UNKNOWN"}`,
-      to: `INV${investment.inv_id || "UNKNOWN"}`,
-      amount: amount,
-      description: `Initial investment to manager ${manager.nickname}'s portfolio.`,
-      related_transaction: userTransaction._id,
-    });
-    await investmentTransaction.save({ session });
+      const investmentTransaction = new investmentTransactionModel({
+        user: user._id,
+        investment: investment[0]._id,
+        manager: manager._id,
+        type: "deposit",
+        status: "pending",
+        from: `WALL${user.my_wallets.main_wallet_id || "UNKNOWN"}`,
+        to: `INV${investment[0].inv_id || "UNKNOWN"}`,
+        amount: amount,
+        description: `Initial investment to manager ${manager.nickname}'s portfolio.`,
+        related_transaction: userTransaction._id,
+      });
 
-    // Update manager's total investors count atomically
-    await managerModel.findByIdAndUpdate(managerId, {
-      $inc: { total_investors: 1 }
-    }, { session });
+      await Promise.all([
+        userTransaction.save({ session }),
+        investmentTransaction.save({ session }),
+      ]);
 
-    // Commit transaction
-    await session.commitTransaction();
-    session.endSession();
+      // Update manager's total investors count
+      await managerModel.findByIdAndUpdate(managerId, {
+        $inc: { total_investors: 1 },
+      }, { session });
 
-    return res.status(201).json({
-      result: investment,
-      investmentId: investment._id,
-      msg: 'Investment created successfully!',
+      return res.status(201).json({
+        result: investment[0],
+        investmentId: investment[0]._id,
+        msg: "Investment created successfully!",
+      });
     });
 
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
     console.error("Deposit error:", error);
-    res.status(500).json({ errMsg: 'Server error!', error: error.message });
+    return res.status(500).json({ errMsg: "Server error!", error: error.message });
+
+  } finally {
+    session.endSession();
   }
 };
+
 
 // const approveDepositTransaction = async (transactionId,rollover_id) => {
 //     try {
@@ -849,7 +847,6 @@ const approveWithdrawalTransaction = async (withdrawTransactionId,rollover_id) =
       });
       await feeTransaction.save();
     }
-    console.log('bbbbbbbbbbbbb',finalAmount);
     
     // Update user's wallet
     userData.my_wallets.main_wallet += finalAmount;
@@ -877,7 +874,6 @@ const approveWithdrawalTransaction = async (withdrawTransactionId,rollover_id) =
       userData.save()
     ]);
 
-    console.log("ccccccccccc", userData);
     console.log('Withdrawal added to user wallet successfully.');
     return true
   } catch (error) {

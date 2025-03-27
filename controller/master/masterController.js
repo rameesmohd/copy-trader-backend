@@ -4,6 +4,7 @@ const depositModel = require('../../models/deposit')
 const withdrawModel = require('../../models/withdrawal')
 const jwt = require("jsonwebtoken");
 const userTransactionModel = require('../../models/userTransaction');
+const { default: mongoose } = require('mongoose');
 
 const fetchUser =async(req,res)=>{
     try {
@@ -197,6 +198,60 @@ const handleWithdraw = async (req, res) => {
     }
 };
 
+const addToWallet = async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const { email, amount, comment } = req.body;
+        console.log(req.body);
+        
+        // Find the user within the transaction
+        const user = await userModel.findOne({ email }).session(session);
+        if (!user) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).json({ errMsg: "User not found!!" });
+        }
+
+        // Create new user transaction
+        const newUserTransaction = new userTransactionModel({
+            user: user._id,
+            type: 'transfer',
+            payment_mode: 'main wallet',
+            status: 'approved',
+            amount: amount,
+            transaction_type: 'deposits',
+            description: comment || 'Credit from provider 283774',
+        });
+
+        await newUserTransaction.save({ session });
+
+        // Update the user's wallet balance
+        const walletUpdate = await userModel.findOneAndUpdate(
+            { _id: user._id },
+            { $inc: { 'my_wallets.main_wallet': amount } },
+            { session }
+        );
+
+        if (!walletUpdate) {
+            throw new Error("Failed to update wallet balance");
+        }
+
+        // Commit transaction if everything is successful
+        await session.commitTransaction();
+        session.endSession();
+
+        return res.status(200).json({ msg: "Funds added successfully" });
+
+    } catch (error) {
+        await session.abortTransaction();
+        session.endSession();
+        console.error("Error adding funds:", error);
+        return res.status(500).json({ errMsg: "Error adding funds", error });
+    }
+};
+
 
 module.exports = {
     fetchUser,
@@ -209,5 +264,6 @@ module.exports = {
     getPendingKYCRequests,
     approveKycDocs,
     approveKyc,
-    handleWithdraw
+    handleWithdraw,
+    addToWallet
 }

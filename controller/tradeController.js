@@ -395,7 +395,7 @@ const getDailyGrowthData = async (managerId) => {
 // };
 
 const truncateToTwoDecimals = (num) => {
-    return Math.floor(num * 100) / 100;
+    return Math.round((num + Number.EPSILON) * 100) / 100;
   };
   
 
@@ -420,7 +420,7 @@ const rollOverTradeDistribution = async (rollover_id) => {
     const bulkManagerUpdates = [];
 
     for (const trade of unDistributedTrades) {
-          const tradeProfit = trade.manager_profit || 0;
+          const tradeProfit =   (trade.manager_profit);
 
           const manager = await managerModel.findById(trade.manager).session(session);
           if (!manager) {
@@ -447,10 +447,14 @@ const rollOverTradeDistribution = async (rollover_id) => {
                 continue;
               }
 
-              const investorProfit = truncateToTwoDecimals(Number(((investment.total_funds / totalFunds) * tradeProfit)))
-              const performanceFee = truncateToTwoDecimals(Number((investorProfit * (investment.manager_performance_fee || 0)) / 100))
+            const investorProfit = truncateToTwoDecimals(
+                (investment.total_funds / totalFunds) * tradeProfit
+            );
+            const performanceFee = truncateToTwoDecimals(
+                (investorProfit * (investment.manager_performance_fee || 0)) / 100
+            );
 
-              if(investorProfit>0){                 
+            //   if(investorProfit>0){                 
               // Update investment profits
               bulkInvestmentUpdates.push({
                   updateOne: {
@@ -478,13 +482,13 @@ const rollOverTradeDistribution = async (rollover_id) => {
                   open_price: trade.open_price,
                   close_price: trade.close_price,
                   swap: trade.swap,
-                  open_time: trade.open_time,
-                  close_time: trade.close_time,
+                  open_time: new Date(trade.open_time).toISOString(),
+                  close_time: new Date(trade.close_time).toISOString(),
                   manager_profit: trade.manager_profit,
                   investor_profit: investorProfit,
                   rollover_id: rollover_id,
                 });
-            }
+            // }
         }
 
           // Mark the trade as distributed
@@ -495,7 +499,7 @@ const rollOverTradeDistribution = async (rollover_id) => {
               },
           });
 
-          if (tradeProfit > 0) {
+        //   if (tradeProfit > 0) {
               // Queue manager update
               bulkManagerUpdates.push({
               updateOne: {
@@ -508,7 +512,7 @@ const rollOverTradeDistribution = async (rollover_id) => {
                     },
                 },
             });
-        }
+        // }
     }
 
       // Execute bulk database operations **inside the transaction**

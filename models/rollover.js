@@ -4,7 +4,7 @@ const { Schema } = mongoose;
 const rolloverSchema = new Schema({
     period: {
         type: String,
-        enum: ["daily", "weekly", "monthly"],
+        enum: ["15min","4hr","daily", "weekly", "monthly"],
         required: true,
       },
     status: { 

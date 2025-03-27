@@ -2,13 +2,33 @@ const cron = require("node-cron");
 const rolloverModel = require("../models/rollover");
 const { fetchAndApprovePendingInvestmentTransactions } = require('../controller/rolloverController')
 
+// const getNextRolloverTime = (currentTime, period) => {
+//   const nextTime = new Date(currentTime);
+//   if (period === "15min") nextTime.setMinutes(nextTime.getMinutes() + 15);
+//   if (period === "4hr") nextTime.setHours(nextTime.getHours() + 4);
+//   if (period === "daily") nextTime.setDate(nextTime.getDate() + 1);
+//   return nextTime;
+// };
+
 const getNextRolloverTime = (currentTime, period) => {
-    const nextTime = new Date(currentTime);
-    if (period === "daily") nextTime.setDate(nextTime.getDate() + 1);
-    if (period === "weekly") nextTime.setDate(nextTime.getDate() + 7);
-    if (period === "monthly") nextTime.setMonth(nextTime.getMonth() + 1);
-    return nextTime;
+  let nextTime = new Date(currentTime);
+
+  if (period === "15min") {
+    nextTime.setMinutes(nextTime.getMinutes() + 15);
+  } else if (period === "4hr") {
+    nextTime.setHours(nextTime.getHours() + 4);
+  } else if (period === "daily") {
+    nextTime.setDate(nextTime.getDate() + 1);
+  }
+
+  // Ensure next rollover is only on weekdays (Mon-Fri)
+  while (nextTime.getDay() === 6 || nextTime.getDay() === 0) {
+    nextTime.setDate(nextTime.getDate() + 1);
+  }
+
+  return nextTime;
 };
+
 
 const processRollover=async(rollover_id)=>{
   try {
@@ -29,24 +49,26 @@ const processRollover=async(rollover_id)=>{
   }
 }
 
-const createRollover = async()=>{
+const createRollover = async (period) => {
   const rollover = new rolloverModel({
-  period: "daily",
-  start_time: new Date(),
-  status: "pending",
-  next_rollover_time:getNextRolloverTime(new Date(), "daily")
+    period: period,
+    start_time: new Date(),
+    status: "pending",
+    next_rollover_time: getNextRolloverTime(new Date(), period),
   });
-  
+
   await rollover.save();
   await processRollover(rollover._id);
-}
+};
 
-// Schedule daily rollover at midnight UTC
-// cron.schedule("*/15 * * * *", async () => {
-cron.schedule("0 0 * * *", async () => {
-  console.log("Running daily rollover...");
-  createRollover()  
+cron.schedule("0 */4 * * 1-5", async () => {
+  console.log("Running 4-hour rollover...");
+  createRollover("4hr");
 });
 
-// createRollover()
+// Schedule 15-minute rollover (for testing)
+// cron.schedule("*/15 * * * *", async () => {
+//   console.log("Running 15-minute rollover...");
+//   createRollover("15min");
+// });
 

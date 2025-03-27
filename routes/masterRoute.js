@@ -12,6 +12,7 @@ const {
         approveKycDocs,
         approveKyc,
         handleWithdraw,
+        addToWallet
     } =require('../controller/master/masterController')
 const { fetchAddressBalance } = require('../controller/paymentController')
 const {verifyToken} = require('../middleware/masterAuth')
@@ -40,6 +41,8 @@ router.route('/kyc-requests')
     .get(getPendingKYCRequests)
     .patch(approveKycDocs)
     .post(approveKyc)
+
+router.post('/add-to-wallet',addToWallet)
 
 module.exports= router
 

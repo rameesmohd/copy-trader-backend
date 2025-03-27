@@ -4,6 +4,7 @@ const investmentTransactionModel = require('../models/investmentTransaction');
 const userModel = require('../models/user')
 const rebateTransactionModel = require('../models/rebateTransaction');
 const { default: mongoose } = require('mongoose');
+const intervalModel = require('../models/interval');
 
 // const intervalInvestmentHandle = async (req, res) => {
 //     try {
@@ -212,7 +213,7 @@ const truncateToTwoDecimals = (num) => {
   };
   
 
-const intervalInvestmentHandle = async (req, res) => {
+const intervalHandle = async () => {
     const session = await mongoose.startSession();
     session.startTransaction();
 
@@ -255,42 +256,11 @@ const intervalInvestmentHandle = async (req, res) => {
         let adjustedPerformanceFee = truncateToTwoDecimals(investment.performance_fee_projected);
         let inviterShare = 0;
 
-        // if (investment.referred_by) {
-        //     const inviter = await userModel.findOne({ _id: investment.referred_by }).session(session);
-        //     if (inviter && investment.performance_fee_projected > 0) {
-        //         inviterShare = Number((investment.current_interval_profit_equity * 0.05).toFixed(2));
-        //         adjustedPerformanceFee -= inviterShare;
-
-        //         inviterUpdates.push({
-        //             updateOne: {
-        //                 filter: { _id: inviter._id },
-        //                 update: {
-        //                     $inc: {
-        //                         "my_wallets.rebate_wallet": inviterShare,
-        //                         "referral.total_earned_commission": inviterShare
-        //                     }
-        //                 }
-        //             }
-        //         });
-
-        //         rebateTransactions.push({
-        //             user: inviter._id,
-        //             investment: investment._id,
-        //             type: 'commission',
-        //             status: 'approved',
-        //             amount: inviterShare,
-        //             description: `Weekly commission distribution.`,
-        //         });
-
-        //         console.log(`Inviter ${inviter._id} updated with rebate: ${inviterShare}`);
-        //     }
-        // }
-
         if (investment.referred_by) {
                 const inviter = await userModel.findOne({ _id: investment.referred_by }).session(session);
                 if (inviter && investment.performance_fee_projected > 0) {
-                    inviterShare = truncateToTwoDecimals((investment.current_interval_profit_equity * 0.05))
-                    adjustedPerformanceFee -= inviterShare;
+                    inviterShare = truncateToTwoDecimals(investment.performance_fee_projected / 3);
+                    adjustedPerformanceFee = truncateToTwoDecimals(adjustedPerformanceFee - inviterShare);
             
                     inviterUpdates.push({
                         updateOne: {
@@ -345,7 +315,7 @@ const intervalInvestmentHandle = async (req, res) => {
                     update: { $inc: { total_performance_fee_collected: adjustedPerformanceFee } }
                 }
             });
-
+            
             feeTransactions.push({
                 user: investment.user,
                 investment: investment._id,
@@ -386,19 +356,100 @@ const intervalInvestmentHandle = async (req, res) => {
 
         await session.commitTransaction();
         session.endSession();
-
         console.log("Interval investment handling completed successfully.");
-        res.status(200).json({ message: 'Interval investment handling completed successfully' });
     } catch (error) {
         await session.abortTransaction();
         session.endSession();
         console.error('Error in interval investment handling:', error);
-        res.status(500).json({ errMsg: 'Server side error', error: error.message });
     }
 };
 
+const getCurrentWeekEndDate = () => {
+    const today = new Date();
+    const dayOfWeek = today.getUTCDay(); // Use UTC-based day of the week
+
+    // Get last Sunday (or today if it's Sunday)
+    const firstDayOfWeek = new Date(today);
+    firstDayOfWeek.setUTCDate(today.getUTCDate() - dayOfWeek);
+    firstDayOfWeek.setUTCHours(0, 0, 0, 0); // Ensure UTC time
+
+    // Get next Saturday at 23:59:59 UTC
+    const lastDayOfWeek = new Date(firstDayOfWeek);
+    lastDayOfWeek.setUTCDate(firstDayOfWeek.getUTCDate() + 6);
+    lastDayOfWeek.setUTCHours(23, 59, 59, 999); // Ensure UTC time
+
+    return { firstDayOfWeek, lastDayOfWeek };
+};
+
+
+const getCurrentWeekDates = () => {
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+
+    // Calculate the date of the last Sunday (or today if it's Sunday)
+    const firstDayOfWeek = new Date(today);
+    firstDayOfWeek.setDate(today.getDate() - dayOfWeek); // Sunday
+
+    // Calculate the date of the next Saturday
+    const lastDayOfWeek = new Date(firstDayOfWeek);
+    lastDayOfWeek.setDate(firstDayOfWeek.getDate() + 6); // Saturday
+
+    // Format the start and end dates
+    const options = { month: 'short', day: 'numeric', year: 'numeric' };
+    const startDate = firstDayOfWeek.toLocaleDateString('en-US', options);
+    const endDate = lastDayOfWeek.toLocaleDateString('en-US', options);
+    
+    // Split the formatted strings
+    const startParts = startDate.split(' ');
+    const endParts = endDate.split(' ');
+
+    // Extracting month, day, and year to construct the final string
+    const startMonth = startParts[0];
+    const startDay = startParts[1];
+    const endDay = endParts[1];
+    const year = startParts[2];
+
+    // Construct the final string without extra commas
+    return `${startMonth} ${startDay}–${endDay} ${year}`.replace(/,\s*–/g, '–'); // Remove any comma before the dash
+};
+
+const handleInterval = async () => {
+    const interval = await intervalModel.findOne({ status: "pending" }).sort({ createdAt: -1 });
+
+    if (interval) {
+        interval.status = "completed";
+        await interval.save();
+    }
+
+    // Get correct week start and end dates
+    const { firstDayOfWeek, lastDayOfWeek } = getCurrentWeekEndDate();
+
+    const newInterval = new intervalModel({
+        current_interval_start: firstDayOfWeek,
+        current_interval_end: lastDayOfWeek,
+        current_intervel: getCurrentWeekDates(),
+    });
+
+    await newInterval.save();
+    await intervalHandle();
+};
+
+
+
+//---------------Test api Function---------
+const intervalInvestmentHandle=async(req,res)=>{
+    try {
+        await handleInterval()
+        res.status(200).json({ msg: 'Interval investment handling completed successfully' });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ errMsg: 'Server side error', error: error.message });
+    }
+}
+
 module.exports = {
     intervalInvestmentHandle,
+    handleInterval
 };
 
 
