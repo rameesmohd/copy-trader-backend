@@ -322,7 +322,7 @@ const intervalHandle = async () => {
                 type: 'manager_fee',
                 status: 'success',
                 amount: performanceFeePaid,
-                comment: `Performance fee of deducted`,
+                comment: `Performance fee is deducted.`,
             });
 
             console.log(`Investment ${investment._id} updated: net profit = ${netIntervalProfit}, performance fee = ${performanceFeePaid}`);

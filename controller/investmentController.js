@@ -709,9 +709,24 @@ const handleInvestmentWithdrawal = async (req, res) => {
       Number(investment.total_funds) - Number(totalRecentDeposits);
 
     let withdrawTransaction;
-    console.log('availableEquityForWithdraw:', availableEquityForWithdraw, 'Requested:', withdrawalAmount);
-
+    // console.log('availableEquityForWithdraw:', availableEquityForWithdraw, 'Requested:', withdrawalAmount);
     const user = await userModel.findById(investment.user);
+    
+    //------------------------------test-------------------------
+    withdrawTransaction = new investmentTransactionModel({
+      user: investment.user,
+      investment: investment._id,
+      manager: investment.manager,
+      type: 'withdrawal',
+      status: 'rejected',
+      from : `INV${investment.inv_id}`,
+      to : `WALL${user.my_wallets.main_wallet_id}`,
+      amount: withdrawalAmount,
+      comment: `Unsettled provider credit.`
+    });
+    await withdrawTransaction.save();
+    return res.status(200).json({ errMsg: 'Unsettled provider credit.' });
+    // ------------------------------------test------------------------------------
 
     if (withdrawalAmount <= availableEquityForWithdraw) {
       // Case 1: Withdraw from available unlocked equity
