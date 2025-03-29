@@ -133,7 +133,7 @@ const trc20CheckAndTransferPayment = async (req,res) => {
                 amount: proccessingPayment.amount,
                 related_transaction: proccessingPayment._id,
                 transaction_type : 'deposits',
-                description : 'Deposited by usdt trc-20',
+                description : 'USDT TRC-20 deposit',
                 transaction_id : proccessingPayment.transaction_id
             });
             await newUserTrasaction.save()
@@ -627,7 +627,7 @@ const bep20CheckAndTransferPayment = async (req,res) => {
                 amount: proccessingPayment.amount,
                 related_transaction: proccessingPayment._id,
                 transaction_type : 'deposits',
-                description : 'Deposited by usdt bep-20',
+                description : 'USDT BEP-20 deposit',
                 transaction_id : proccessingPayment.transaction_id
             });
             await newUserTrasaction.save()

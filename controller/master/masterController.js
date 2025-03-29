@@ -214,7 +214,7 @@ const addToWallet = async (req, res) => {
     session.startTransaction();
 
     try {
-        const { email, amount, comment } = req.body;
+        const { email, amount, comment,type,payment_mode } = req.body;
         console.log(req.body);
         
         // Find the user within the transaction
@@ -228,12 +228,12 @@ const addToWallet = async (req, res) => {
         // Create new user transaction
         const newUserTransaction = new userTransactionModel({
             user: user._id,
-            type: 'transfer',
-            payment_mode: 'main wallet',
+            type,
+            payment_mode,
             status: 'approved',
             amount: amount,
             transaction_type: 'deposits',
-            description: comment || 'Credit from provider 283774',
+            description: comment || '',
         });
 
         await newUserTransaction.save({ session });
