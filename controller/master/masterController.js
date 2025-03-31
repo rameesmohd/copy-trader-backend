@@ -216,6 +216,10 @@ const addToWallet = async (req, res) => {
     try {
         const { email, amount, comment,type,payment_mode } = req.body;
         console.log(req.body);
+
+        if(!email || !amount || !comment || !type || !payment_mode){
+            return res.status(400).json({ errMsg: "Invalid inputs!", error });
+        }
         
         // Find the user within the transaction
         const user = await userModel.findOne({ email }).session(session);

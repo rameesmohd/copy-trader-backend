@@ -24,120 +24,6 @@ const fetchAndUseLatestRollover = async () => {
   return latestPendingRollover
 };
 
-// const makeDeposit = async (req, res) => {
-//     try {
-//       const { userId, managerId, amount, ref } = req.body;
-      
-//       const user = await userModel.findById(userId);
-//       const manager = await managerModel.findById(managerId);
-//       const inviter = await userModel.findOne({user_id : ref})
-//       console.log(inviter);
-      
-//       if(!user || !manager ){
-//         return res
-//         .status(400)
-//         .json({ errMsg: 'invalid credentials!' });
-//       }
-  
-//       // Validate if user has enough balance
-//       if (amount > user.my_wallets.main_wallet) {
-//         return res
-//           .status(400)
-//           .json({ errMsg: 'Insufficient balance. Please deposit more funds.' });
-//       }
-  
-//       // Check if the deposit meets the manager's minimum initial investment
-//       if (amount < manager.min_initial_investment) {
-//         return res
-//           .status(400)
-//           .json({ errMsg: `Minimum investment is ${manager.min_initial_investment} USD.` });
-//       }
-  
-//       // Deduct the amount from user's wallet
-//       user.my_wallets.main_wallet -= amount;
-
-//       const invCount = await investmentModel.countDocuments();
-
-//       const investment = new investmentModel({
-//         inv_id: 21000+invCount,
-//         user: user._id,
-//         manager: manager._id,
-//         manager_nickname: manager.nickname,
-//         total_funds: 0,
-//         trading_interval: manager.trading_interval,
-//         min_initial_investment: manager.min_initial_investment,
-//         min_top_up: manager.min_top_up,
-//         trading_liquidity_period: manager.trading_liquidity_period,
-//         total_deposit: 0,
-//         manager_performance_fee: manager.performance_fees_percentage,
-//         min_withdrawal : manager.min_withdrawal,
-//         deposits: [], 
-
-//       });
-
-//       if(inviter && inviter._id != user._id){
-//         investment.inviter = inviter._id   
-//       }
-      
-//       await user.save();
-//       await investment.save();
-      
-//       if(inviter && inviter._id != user._id){
-//         await userModel.findByIdAndUpdate(inviter._id, {
-//           $push: {
-//               "referral.investments": {
-//                   investment_id: investment._id,
-//               }
-//           }
-//         });
-//       }
-
-//       const userTransaction = new userTransactionModel({
-//         user: user._id,
-//         investment: investment._id,
-//         type: "transfer",
-//         status: "approved", 
-//         amount: amount,
-//         from: user.my_wallets?.main_wallet_id ? `WALL${user.my_wallets.main_wallet_id}` : "UNKNOWN",
-//         to: investment.inv_id ? `INV${investment.inv_id}` : "UNKNOWN",
-//         description: `Transferred to investment manager ${manager.nickname}.`,
-//         transaction_type: "investment_transactions",
-//       });
-//       await userTransaction.save()
-      
-//       const investmentTransaction = new investmentTransactionModel({
-//         user: user._id,
-//         investment: investment._id,
-//         manager: manager._id,
-//         type: "deposit",
-//         status: "pending", 
-//         from: user.my_wallets?.main_wallet_id ? `WALL${user.my_wallets.main_wallet_id}` : "UNKNOWN",
-//         to: investment.inv_id ? `INV${investment.inv_id}` : "UNKNOWN",
-//         amount: amount,
-//         description: `Initial investment to manager ${manager.nickname}'s portfolio.`,
-//         related_transaction: userTransaction._id,
-//       });
-//       await investmentTransaction.save()
-
-//       manager.total_investors += 1
-//       await manager.save()
-      
-//       // await approveDepositTransaction(investmentTransaction._id)
-  
-//       // Return success response with investment ID
-//       return res.status(201).json({
-//         result: investment,
-//         investmentId: investment._id,
-//         msg: 'Investment created successfully!',
-//       });
-      
-//     } catch (error) {
-//       console.log(error);
-//       res.status(500).json({ errMsg: 'Server error!', error: error.message });
-//     }
-//   };
-
-
 const makeDeposit = async (req, res) => {
   const session = await mongoose.startSession();
 
@@ -268,135 +154,71 @@ const makeDeposit = async (req, res) => {
   }
 };
 
-
-// const approveDepositTransaction = async (transactionId,rollover_id) => {
-//     try {
-//       // Find the transaction by ID
-//       const transaction = await investmentTransactionModel.findById(transactionId);
-  
-//       if (!transaction || transaction.status !== 'pending') {
-//         // throw new Error('Transaction not found or already approved');
-//         console.log('Transaction not found or already approved');
-//         return false
-//       }
-  
-//       // Update transaction status to approved
-//       transaction.status = 'approved';
-//       transaction.rollover_id = rollover_id
-//       await transaction.save();
-
-//       // Find the related investment
-//       const investment = await investmentModel.findById(transaction.investment);
-
-//       if (!investment) {
-//         console.log('Investment not found');
-//         return false
-//       }
-
-//       // Create a new deposit object with lock duration
-//       const deposit = {
-//           amount : transaction.amount,
-//           lock_duration: investment.trading_liquidity_period, // eg: 30 days lock period
-//           deposited_at: new Date(),
-//       };
-      
-//       // Update investment details
-//       investment.total_funds += transaction.amount; // Add the funds to the investment
-//       investment.total_deposit += transaction.amount; // Update total deposits
-//       investment.deposits.push(deposit); // Add the deposit to the deposits array
-      
-//       const manager = await managerModel.findById(investment.manager);
-//       manager.total_funds += transaction.amount;
-//       manager.total_investors += 1
-
-//       await manager.save()
-//       await investment.save(); 
-
-//       return true
-//     } catch (error) {
-//       console.error(error);
-//       return false
-//       // throw new Error('Error approving transaction');
-//     }
-// };
-
 const approveDepositTransaction = async (transactionId, rollover_id) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  let retries = 3;
 
-  try {
-      // Find the transaction by ID
-      const transaction = await investmentTransactionModel.findById(transactionId).session(session);
+  while (retries > 0) {
+    const session = await mongoose.startSession();
+    try {
+      await session.withTransaction(async () => {
+        // Atomically find & approve transaction
+        const transaction = await investmentTransactionModel.findOneAndUpdate(
+          { _id: transactionId, status: "pending" },
+          { status: "approved", rollover_id },
+          { session, new: true }
+        );
 
-      if (!transaction || transaction.status !== 'pending') {
-          console.log('Transaction not found or already approved');
-          await session.abortTransaction();
-          session.endSession();
-          return false;
-      }
+        if (!transaction) {
+          console.log("Transaction not found or already approved");
+          throw new Error("Transaction not found");
+        }
 
-      // Approve the transaction
-      transaction.status = 'approved';
-      transaction.rollover_id = rollover_id;
-      await transaction.save({ session });
+        // Fetch investment
+        const investment = await investmentModel.findById(transaction.investment).session(session);
+        if (!investment) throw new Error("Investment not found");
 
-      // Find the related investment
-      const investment = await investmentModel.findById(transaction.investment).session(session);
-
-      if (!investment) {
-          console.log('Investment not found');
-          await session.abortTransaction();
-          session.endSession();
-          return false;
-      }
-
-      // Create deposit object
-      const deposit = {
+        // Create deposit object
+        const deposit = {
           amount: transaction.amount,
-          lock_duration: investment.trading_liquidity_period, // eg: 30 days lock period
+          lock_duration: investment.trading_liquidity_period,
           deposited_at: new Date(),
-      };
+        };
 
-      // Update investment fields
-      await investmentModel.findByIdAndUpdate(investment._id, {
-          $inc: {
-              total_funds: transaction.amount,
-              total_deposit: transaction.amount
-          },
+        // Update investment fields
+        await investmentModel.findByIdAndUpdate(investment._id, {
+          $inc: { total_funds: transaction.amount, total_deposit: transaction.amount },
           $push: { deposits: deposit }
-      }, { session });
+        }, { session });
 
-      // Update the manager's funds
-      const manager = await managerModel.findById(investment.manager).session(session);
+        // Fetch and update manager
+        const manager = await managerModel.findById(investment.manager).session(session);
+        if (!manager) throw new Error("Manager not found");
 
-      if (!manager) {
-          console.log('Manager not found');
-          await session.abortTransaction();
-          session.endSession();
-          return false;
-      }
+        const isNewInvestor = !(await investmentModel.exists({ manager: manager._id, user: investment.user }));
 
-      // Only increment total_investors if this user is investing for the first time in this manager
-      const isNewInvestor = !(await investmentModel.exists({ manager: manager._id, user: investment.user }));
+        await managerModel.findByIdAndUpdate(manager._id, {
+          $inc: { total_funds: transaction.amount, ...(isNewInvestor && { total_investors: 1 }) }
+        }, { session });
+      });
 
-      await managerModel.findByIdAndUpdate(manager._id, {
-          $inc: {
-              total_funds: transaction.amount,
-              ...(isNewInvestor && { total_investors: 1 }) // Only increment if user is new
-          }
-      }, { session });
-
-      await session.commitTransaction();
       session.endSession();
       return true;
-  } catch (error) {
-      console.error("Error approving transaction:", error);
-      await session.abortTransaction();
+    } catch (error) {
       session.endSession();
-      return false;
+      if (error.codeName === "WriteConflict") {
+        retries--;
+        console.log(`Retrying transaction... Attempts left: ${retries}`);
+        await new Promise(res => setTimeout(res, 500)); // Small delay before retry
+      } else {
+        console.error("Error approving transaction:", error);
+        return false;
+      }
+    }
   }
-};
 
+  console.log("Transaction failed after retries.");
+  return false;
+};
 
 const fetchInvestmentTransactions=async(req,res)=>{
     try {
@@ -410,123 +232,6 @@ const fetchInvestmentTransactions=async(req,res)=>{
       res.status(500).json({ errMsg: 'Server error!', error: error.message });
     }
 }
-
-// const topUpInvestment =async(req,res)=>{
-//     try {
-//         const { userId, investmentId, amount } = req.body;
-    
-//         const user = await userModel.findById(userId);
-//         const investment = await investmentModel.findById(investmentId);
-
-//         // Validate if user has enough balance
-//         if (amount > user.my_wallets.main_wallet) {
-//           return res
-//             .status(400)
-//             .json({ errMsg: 'Insufficient balance. Please deposit more funds.' });
-//         }
-    
-//         // Check if the deposit meets the manager's minimum initial investment
-//         if (amount < investment.min_top_up) {
-//           return res
-//             .status(400)
-//             .json({ errMsg: `Minimum investment is ${investment.manager_nickname} USD.` });
-//         }
-    
-//         // Deduct the amount from user's wallet
-//         user.my_wallets.main_wallet -= amount;
-
-//         const userTransaction = new userTransactionModel({
-//           user : user._id,
-//           investment : investment._id,
-//           type : 'transfer',
-//           status : 'approved',
-//           from : `WALL${user.my_wallets.main_wallet_id}`,
-//           to : `INV${investment.inv_id}`,
-//           amount : amount , 
-//           transaction_type : 'investment_transactions',
-//           comment : `Topup to investment with manager ${investment.manager_nickname}.`
-//         })
-        
-//         const investmentTransaction = new investmentTransactionModel({
-//           user : user._id,
-//           investment : investment._id,
-//           manager : investment.manager,
-//           type : 'deposit',
-//           from : `WALL${user.my_wallets.main_wallet_id}`,
-//           to : `INV${investment.inv_id}`,
-//           status : 'pending',
-//           amount : amount , 
-//           comment : `Topup added to manager ${investment.manager_nickname}'s portfolio.`
-//         })
-  
-//         await userTransaction.save()
-//         await investmentTransaction.save()
-
-//         await user.save();
-        
-//         // await approveTopup(investmentTransaction._id)
-
-//         // Return success response with investment ID
-//         return res.status(201).json({
-//           result: investment,
-//           investmentId: investment._id,
-//           msg: 'Deposit added successfully!',
-//         });
-    
-//       } catch (error) {
-//         console.log(error);
-//         res.status(500).json({ errMsg: 'Server error!', error: error.message });
-//       }
-// }
-
-// const approveTopup=async(transactionId,rollover_id)=>{
-//     try {
-//       // Find the transaction by ID
-//       const transaction = await investmentTransactionModel.findById(transactionId);
-  
-//       if (!transaction || transaction.status !== 'pending') {
-//         throw new Error('Transaction not found or already approved');
-//       }
-  
-//       // Update transaction status to approved
-//       transaction.status = 'approved';
-//       transaction.rollover_id = rollover_id
-//       await transaction.save();
-
-      
-//       // Find the related investment
-//       const investment = await investmentModel.findById(transaction.investment);
-
-//       if (!investment) {
-//         return res.status(400).json({ errMsg: 'investment no found!!', error: error.message });
-//       }
-
-//       // Create a new deposit object with lock duration
-//       const deposit = {
-//         amount:transaction.amount,
-//         lock_duration: investment.trading_liquidity_period, // 30 days lock period for example (can be customized)
-//         deposited_at: new Date(),
-//       };
-  
-//       // If investment exists, add the deposit to the existing investment
-//       investment.deposits.push(deposit);
-//       investment.total_funds += transaction.amount;
-//       investment.total_deposit += transaction.amount;
-
-//       await investment.save();
-  
-//       // Update manager's total funds 
-//       const manager = await managerModel.findById(investment.manager);    
-//       manager.total_funds += transaction.amount;
-      
-//       await manager.save();
-
-//       return true
-//     } catch (error) {
-//       console.log(error);
-//       res.status(500).json({ errMsg: 'Server error!', error: error.message });
-//     }
-// }
 
 const topUpInvestment =async(req,res)=>{
   const session = await mongoose.startSession();

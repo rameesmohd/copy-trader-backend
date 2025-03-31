@@ -14,46 +14,35 @@ const fetchAndUseLatestRollover = async () => {
 };
 
 const fetchAndApprovePendingInvestmentTransactions = async (rollover_id) => {
-    try {
-      const pendingDepositTransactions = await investmentTransactionModel.find({
-        status: "pending",
-        type: "deposit",
-      });
-  
-      const pendingWithdrawTransactions = await investmentTransactionModel.find({
-        status: "pending",
-        type: "withdrawal",
-      });
-  
-      await rollOverTradeDistribution(rollover_id);
-  
-      const depositPromises = pendingDepositTransactions.map((transaction) =>
-        approveDepositTransaction(transaction._id, rollover_id)
-      );
-  
-      const withdrawPromises = pendingWithdrawTransactions.map((transaction) =>
-        approveWithdrawalTransaction(transaction._id, rollover_id)
-      );
-  
-      const results = await Promise.allSettled([
-        ...depositPromises,
-        ...withdrawPromises,
-      ]);
-  
-      results.forEach((result, index) => {
-        if (result.status === "rejected") {
-          console.error(
-            `Transaction ${index + 1} failed:`,
-            result.reason.message || result.reason
-          );
-        }
-      });
-  
-      console.log("All pending transactions processed.");
-    } catch (error) {
-      console.error("Error processing investment transactions:", error);
+  try {
+    const [pendingDepositTransactions, pendingWithdrawTransactions] = await Promise.all([
+      investmentTransactionModel.find({ status: "pending", type: "deposit" }),
+      investmentTransactionModel.find({ status: "pending", type: "withdrawal" })
+    ]);
+
+    await rollOverTradeDistribution(rollover_id);
+
+    for (const transaction of pendingDepositTransactions) {
+      const result = await approveDepositTransaction(transaction._id, rollover_id);
+      if (!result) {
+        console.error(`Deposit Transaction ${transaction._id} failed`);
+      }
     }
-  };
+
+    for (const transaction of pendingWithdrawTransactions) {
+      const result = await approveWithdrawalTransaction(transaction._id, rollover_id);
+      if (!result) {
+        console.error(`Withdrawal Transaction ${transaction._id} failed`);
+      }
+    }
+
+    console.log("All pending transactions processed.");
+  } catch (error) {
+    console.error("Error processing investment transactions:", error);
+  }
+};
+
+
   
 module.exports = {
     fetchAndApprovePendingInvestmentTransactions,
