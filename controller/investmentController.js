@@ -418,19 +418,19 @@ const handleInvestmentWithdrawal = async (req, res) => {
     const user = await userModel.findById(investment.user);
     
     //------------------------------test-------------------------
-    withdrawTransaction = new investmentTransactionModel({
-      user: investment.user,
-      investment: investment._id,
-      manager: investment.manager,
-      type: 'withdrawal',
-      status: 'rejected',
-      from : `INV${investment.inv_id}`,
-      to : `WALL${user.my_wallets.main_wallet_id}`,
-      amount: withdrawalAmount,
-      comment: `Unsettled provider credit.`
-    });
-    await withdrawTransaction.save();
-    return res.status(200).json({ errMsg: 'Unsettled provider credit.' });
+    // withdrawTransaction = new investmentTransactionModel({
+    //   user: investment.user,
+    //   investment: investment._id,
+    //   manager: investment.manager,
+    //   type: 'withdrawal',
+    //   status: 'rejected',
+    //   from : `INV${investment.inv_id}`,
+    //   to : `WALL${user.my_wallets.main_wallet_id}`,
+    //   amount: withdrawalAmount,
+    //   comment: `Unsettled provider credit.`
+    // });
+    // await withdrawTransaction.save();
+    // return res.status(200).json({ errMsg: 'Unsettled provider credit.' });
     // ------------------------------------test------------------------------------
 
     if (withdrawalAmount <= availableEquityForWithdraw) {
@@ -457,45 +457,47 @@ const handleInvestmentWithdrawal = async (req, res) => {
         }
       });
 
-    } else if (
-      withdrawalAmount > availableEquityForWithdraw &&
-      withdrawalAmount <= availableEquityForWithdraw + Number(investment.current_interval_profit_equity)
-    ) {
-      // Case 2: Withdraw using profits
-      const deductFromCurrentIntervalEquity = withdrawalAmount - availableEquityForWithdraw;
-      console.log('deductFromCurrentIntervalEquity:', deductFromCurrentIntervalEquity);
+    } 
+    // else if (
+    //   withdrawalAmount > availableEquityForWithdraw &&
+    //   withdrawalAmount <= availableEquityForWithdraw + Number(investment.current_interval_profit_equity)
+    // ) {
+    //   // Case 2: Withdraw using profits
+    //   const deductFromCurrentIntervalEquity = withdrawalAmount - availableEquityForWithdraw;
+    //   console.log('deductFromCurrentIntervalEquity:', deductFromCurrentIntervalEquity);
 
-      const performanceFee = (deductFromCurrentIntervalEquity * Number(investment.manager_performance_fee)) / 100;
+    //   const performanceFee = (deductFromCurrentIntervalEquity * Number(investment.manager_performance_fee)) / 100;
 
-      const amountAfterPerformanceFee = deductFromCurrentIntervalEquity - performanceFee;
-      console.log('amountAfterPerformanceFee:', amountAfterPerformanceFee);
+    //   const amountAfterPerformanceFee = deductFromCurrentIntervalEquity - performanceFee;
+    //   console.log('amountAfterPerformanceFee:', amountAfterPerformanceFee);
 
-      // Update investment fields
-      investment.total_funds -= availableEquityForWithdraw;
-      investment.current_interval_profit_equity -= deductFromCurrentIntervalEquity;
-      investment.performance_fee_projected -= performanceFee;
-      investment.performance_fee_paid += performanceFee;
-      investment.total_withdrawal += withdrawalAmount;
+    //   // Update investment fields
+    //   investment.total_funds -= availableEquityForWithdraw;
+    //   investment.current_interval_profit_equity -= deductFromCurrentIntervalEquity;
+    //   investment.performance_fee_projected -= performanceFee;
+    //   investment.performance_fee_paid += performanceFee;
+    //   investment.total_withdrawal += withdrawalAmount;
 
-      // Save the withdrawal transaction
-      withdrawTransaction = new investmentTransactionModel({
-        user: investment.user,
-        investment: investment._id,
-        manager: investment.manager,
-        from : `INV${investment.inv_id}`,
-        to : `WALL${user.my_wallets.main_wallet_id}`,
-        type: 'withdrawal',
-        status: 'pending',
-        amount: withdrawalAmount,
-        deduction : performanceFee,
-        comment: ``
-      });
+    //   // Save the withdrawal transaction
+    //   withdrawTransaction = new investmentTransactionModel({
+    //     user: investment.user,
+    //     investment: investment._id,
+    //     manager: investment.manager,
+    //     from : `INV${investment.inv_id}`,
+    //     to : `WALL${user.my_wallets.main_wallet_id}`,
+    //     type: 'withdrawal',
+    //     status: 'pending',
+    //     amount: withdrawalAmount,
+    //     deduction : performanceFee,
+    //     comment: ``
+    //   });
 
-      await withdrawTransaction.save();
-      await investment.save();
-    } else {
+    //   await withdrawTransaction.save();
+    //   await investment.save();
+    // } 
+    else {
       // Case 3: Insufficient balance
-      if(withdrawalAmount < (Number(investment.total_funds)+Number(investment.current_interval_profit_equity))){
+      if(withdrawalAmount < (Number(investment.total_funds))){
         withdrawTransaction = new investmentTransactionModel({
           user: investment.user,
           investment: investment._id,
