@@ -497,7 +497,7 @@ const handleInvestmentWithdrawal = async (req, res) => {
     // } 
     else {
       // Case 3: Insufficient balance
-      if(withdrawalAmount < (Number(investment.total_funds))){
+      if(withdrawalAmount < Number(investment.total_funds)){
         withdrawTransaction = new investmentTransactionModel({
           user: investment.user,
           investment: investment._id,
@@ -507,10 +507,10 @@ const handleInvestmentWithdrawal = async (req, res) => {
           from : `INV${investment.inv_id}`,
           to : `WALL${user.my_wallets.main_wallet_id}`,
           amount: withdrawalAmount,
-          comment: `Insufficient funds from completed trading liquidity period or profits.`
+          comment: `Liquidity Period is active`
         });
         await withdrawTransaction.save();
-        return res.status(200).json({ errMsg: 'Insufficient funds from completed trading liquidity period or profits.' });
+        return res.status(200).json({ errMsg: 'Liquidity Period is active' });
       }
 
       return res.status(400).json({ errMsg: 'Insufficient balance to withdraw the requested amount.' });

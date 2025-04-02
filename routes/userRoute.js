@@ -15,7 +15,8 @@ const {
     fetchManagerOrderHistory,
     forgetPassGenerateOTP,
     validateForgetOTP,
-    resetPassword
+    resetPassword,
+    callbackRequestSubmit
 }=require('../controller/user/userController')
 const {
     makeDeposit, 
@@ -59,6 +60,7 @@ router.route('/login')
     .post(login)
 
 router.get('/countries',fetchCountryList)
+router.post('/callback-request',callbackRequestSubmit)
 
 router.route('/forget-password')
     .get(forgetPassGenerateOTP)
