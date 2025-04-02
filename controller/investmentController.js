@@ -418,19 +418,19 @@ const handleInvestmentWithdrawal = async (req, res) => {
     const user = await userModel.findById(investment.user);
     
     //------------------------------test-------------------------
-    // withdrawTransaction = new investmentTransactionModel({
-    //   user: investment.user,
-    //   investment: investment._id,
-    //   manager: investment.manager,
-    //   type: 'withdrawal',
-    //   status: 'rejected',
-    //   from : `INV${investment.inv_id}`,
-    //   to : `WALL${user.my_wallets.main_wallet_id}`,
-    //   amount: withdrawalAmount,
-    //   comment: `Unsettled provider credit.`
-    // });
-    // await withdrawTransaction.save();
-    // return res.status(200).json({ errMsg: 'Unsettled provider credit.' });
+    withdrawTransaction = new investmentTransactionModel({
+      user: investment.user,
+      investment: investment._id,
+      manager: investment.manager,
+      type: 'withdrawal',
+      status: 'rejected',
+      from : `INV${investment.inv_id}`,
+      to : `WALL${user.my_wallets.main_wallet_id}`,
+      amount: withdrawalAmount,
+      comment: `Liquidity Period is active`
+    });
+    await withdrawTransaction.save();
+    return res.status(200).json({ errMsg: 'Liquidity Period is active' });
     // ------------------------------------test------------------------------------
 
     if (withdrawalAmount <= availableEquityForWithdraw) {
