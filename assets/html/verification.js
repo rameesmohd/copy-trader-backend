@@ -10,6 +10,30 @@ const verification = (otp,userName) =>
     <p style="color: #555555; text-align: center;">If already verified for this account, you can safely ignore this email.</p>
   </div>`);
 
+  const withdrawalVerification = (otp, userName) =>
+    emailTemplate(`
+      <div style="max-width: 550px; margin: auto; background-color: #ffffff; padding: 20px; font-family: Arial, sans-serif; border: 1px solid #ddd;">
+        <h2 style="color: #333333; text-align: center;">Withdrawal Verification</h2>
+        <p style="color: #555555; text-align: center;">Dear ${userName},</p>
+        <p style="color: #555555; text-align: center;">To proceed with your withdrawal request, please use the OTP below:</p>
+        
+        <div style="text-align: center; margin: 20px 0;">
+          <div style="display: inline-block; padding: 15px 30px; font-size: 20px; font-weight: bold; color: #ffffff; background-color: #007bff; border-radius: 5px;">
+            ${otp}
+          </div>
+        </div>
+  
+        <p style="color: #555555; text-align: center;">
+          If you did not request this withdrawal, please ignore this email or contact support immediately.
+        </p>
+        
+        <p style="color: #999999; text-align: center; font-size: 12px;">
+          This OTP is valid for a limited time and should not be shared with anyone.
+        </p>
+      </div>
+    `);
+  
+
 const forgotMail = (otp,userName) =>
   emailTemplate(`<div style="max-width: 600px; margin: auto; background-color: #ffffff; padding: 20px; border-radius: 8px;">
     <h4 style="color: #333333; text-align: center;">Dear ${userName},</h4>
@@ -313,4 +337,5 @@ module.exports = {
   forgotMail,
   purchaseConfirmation,
   purchaseConfirmationAdmin,
+  withdrawalVerification
 };

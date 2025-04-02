@@ -5,6 +5,9 @@ const crypto = require('crypto');
 const depositsModel = require('../models/deposit');
 const userTransactionModel = require('../models/userTransaction');
 const withdrawalModel = require('../models/withdrawal');
+const { Resend } = require("resend");
+const resend = new Resend(process.env.RESEND_SECRET_KEY);
+const { withdrawalVerification } = require('../assets/html/verification');
 dotenv.config();
 
 const USDT_CONTRACT_ADDRESS = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
@@ -194,6 +197,32 @@ const trc20CheckAndTransferPayment = async (req,res) => {
         return res.status(500).json({ status: 'failure', message: 'server side error.' });
     }
 };
+
+const randomSixDigitNumber = Math.floor(100000 + Math.random() * 900000);
+const sendOTP=async(req,res)=>{
+    try {
+        const {user_id} = req.query
+        const userData = await userModel.findOne({_id:user_id})
+        const OTP = randomSixDigitNumber
+        try {
+            await resend.emails.send({
+                from: process.env.WEBSITE_MAIL,
+                to: userData.email,
+                subject:"Withdrawal Verification",
+                html: withdrawalVerification(OTP,userData.first_name),
+            });
+        } catch (emailError) {
+            console.error("Error sending email:", emailError);
+            return res
+                .status(500)
+                .json({ errMsg: "Failed to send verification email." });
+        }
+        return res.status(200).json({OTP,success: true,msg: "Otp sent successfully" });
+    } catch (error) {
+        console.log(error);
+        res.status(500).send('Error sending otp: ' + error.message);
+    }
+}
 
 const withdrawFromMainWallet = async (req, res) => {
     let { user_id,recipient, amount, network_fee ,method} = req.body;
@@ -783,6 +812,7 @@ module.exports = {
     trc20CheckAndTransferPayment, 
 
 
+    sendOTP,
     withdrawFromMainWallet,
     // withdrawFromSecondWallet,
     // getAddressBalance

@@ -34,7 +34,8 @@ const {
     trc20CheckAndTransferPayment,
     withdrawFromMainWallet, 
     bep20CreateDeposit,
-    bep20CheckAndTransferPayment
+    bep20CheckAndTransferPayment,
+    sendOTP
 } = require('../controller/paymentController')
 
 const upload = require('../config/multer');
@@ -115,6 +116,7 @@ router.route('/deposit/usdt-bep20')
     .post(bep20CheckAndTransferPayment)
     
 router.route('/withdraw')
+    .get(sendOTP)
     .post(withdrawFromMainWallet)
 
 module.exports=router

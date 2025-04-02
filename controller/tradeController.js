@@ -395,7 +395,7 @@ const getDailyGrowthData = async (managerId) => {
 // };
 
 const truncateToTwoDecimals = (num) => {
-    return Math.round((num + Number.EPSILON) * 100) / 100;
+    return Number(num.toFixed(2));
   };
   
 
@@ -420,7 +420,7 @@ const rollOverTradeDistribution = async (rollover_id) => {
     const bulkManagerUpdates = [];
 
     for (const trade of unDistributedTrades) {
-          const tradeProfit =   (trade.manager_profit);
+          const tradeProfit =   truncateToTwoDecimals(trade.manager_profit);
 
           const manager = await managerModel.findById(trade.manager).session(session);
           if (!manager) {
