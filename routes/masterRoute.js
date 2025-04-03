@@ -12,7 +12,9 @@ const {
         approveKycDocs,
         approveKyc,
         handleWithdraw,
-        addToWallet
+        addToWallet,
+        fetchHelpRequests,
+        changeHelpRequestStatus
     } =require('../controller/master/masterController')
 const { fetchAddressBalance } = require('../controller/paymentController')
 const {verifyToken} = require('../middleware/masterAuth')
@@ -20,6 +22,10 @@ const {verifyToken} = require('../middleware/masterAuth')
 router.post('/login',masterLogin)
 
 router.use(verifyToken)
+
+router.route('/help-center')
+    .get(fetchHelpRequests)
+    .patch(changeHelpRequestStatus)
 
 router.route('/users')
     .get(fetchUser)

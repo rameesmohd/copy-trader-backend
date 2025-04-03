@@ -1,6 +1,7 @@
 const userModel = require('../../models/user')
 const managerModel = require('../../models/manager')
 const depositModel = require('../../models/deposit')
+const ticketModel = require('../../models/tickets')
 const withdrawModel = require('../../models/withdrawal')
 const jwt = require("jsonwebtoken");
 const userTransactionModel = require('../../models/userTransaction');
@@ -267,6 +268,27 @@ const addToWallet = async (req, res) => {
     }
 };
 
+const fetchHelpRequests=async(req,res)=>{
+    try {
+        const tickets = (await ticketModel.find({}).populate("user_id","email user_id")).reverse()
+        return res.status(200).json({result : tickets})
+    } catch (error) {
+        console.error("Error fetching help requests : ", error);
+        return res.status(500).json({ errMsg: "Error fetching help requests", error });
+    }
+}
+
+const changeHelpRequestStatus=async(req,res)=>{
+    try {
+        const { ticket_id } = req.query
+        await ticketModel.updateOne({_id : ticket_id},{$set : {status : "resolved"}})
+        return res.status(200).json({success : true})
+    } catch (error) {
+        console.error("Error fetching help requests : ", error);
+        return res.status(500).json({ errMsg: "Error fetching help requests", error });
+    }
+}
+
 
 module.exports = {
     fetchUser,
@@ -280,5 +302,9 @@ module.exports = {
     approveKycDocs,
     approveKyc,
     handleWithdraw,
-    addToWallet
+    addToWallet,
+
+
+    fetchHelpRequests,
+    changeHelpRequestStatus
 }
