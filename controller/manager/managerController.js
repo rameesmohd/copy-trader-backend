@@ -1,7 +1,8 @@
 const investmentModel = require('../../models/investment')
 const managerModel = require('../../models/manager')
 const jwt = require("jsonwebtoken");
-const {fetchAndUseLatestRollover} = require('../rolloverController')
+const {fetchAndUseLatestRollover} = require('../rolloverController');
+const { default: mongoose } = require('mongoose');
 
 const getManagerData=async(req,res)=>{
     try {
@@ -22,14 +23,42 @@ const getManagerData=async(req,res)=>{
 
 const fetchMyInvesters = async(req,res)=>{
     try {
-        const { manager_id }=req.query
-        console.log(req.query)
-        
-        const investments = await investmentModel
-        .find({ manager: manager_id })
-        .populate('user', 'email');
+        const { manager_id, page = 1, pageSize = 10 } = req.query;
+        const skip = (page - 1) * pageSize;
+        const manager =new mongoose.Types.ObjectId(manager_id);
+        const matchQuery = {manager};
 
-        return res.status(200).json({result : investments})
+        // Get total count
+        const totalCount = await investmentModel.countDocuments(matchQuery);
+
+        // Get paginated data
+        const result = await investmentModel
+        .find(matchQuery)
+        .populate('user', 'email')
+        .sort({createdAt : -1})
+        .skip(skip)
+        .limit(Number(pageSize))
+        .lean();
+
+        // Calculate total_funds sum
+        const totalAgg = await investmentModel.aggregate([
+        { $match: matchQuery },
+        {
+            $group: {
+            _id: null,
+            total_funds_sum: { $sum: "$total_funds" }
+            }
+        }
+        ]);
+
+        const totalFundsSum = totalAgg[0]?.total_funds_sum || 0;
+
+        res.json({
+            result,
+            total: totalCount,
+            page: Number(page),
+            total_funds_sum: totalFundsSum
+        });
     } catch (error) {
         console.log(error.message);
         res.status(500).json({errMsg : 'sever side error'})

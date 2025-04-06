@@ -620,7 +620,17 @@ const fetchInvestmentTrades=async(req,res)=>{
 const fetchAllInvestmentTransactions=async(req,res)=>{
   try {
     const { manager_id ,type} = req.query
-    const myInvestmentDeposits = await investmentTransactionModel.find({manager : manager_id,type})
+    const myInvestmentDeposits = await investmentTransactionModel
+    .find({ manager: manager_id, type })
+    .populate({
+      path: "investment",
+      select: "inv_id"
+    })
+    .populate({
+      path: "user",
+      select: "email"
+    })
+    .sort({ createdAt: -1 });
     res.status(200).json({result : myInvestmentDeposits})
   } catch(error) { 
     console.error(error);
