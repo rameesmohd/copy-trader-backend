@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 const verifyToken = async (req, res, next) => {
     try {
       const token = req.header('Authorization');
-      console.log(token);
+      // console.log(token);
       
       if (!token) {
         return res.status(401).json({ msg: 'Authentication failed: No token provided.' });
@@ -16,7 +16,7 @@ const verifyToken = async (req, res, next) => {
     const tokenWithoutBearer = token.slice(7).trim();
     
     const decoded = jwt.verify(tokenWithoutBearer, process.env.JWT_SECRET_KEY_MASTER);
-    console.log('decoded : '+decoded);
+    // console.log('decoded : '+decoded);
     req.decodedUser = decoded;
     if (decoded.role === 'master') {
          return next();

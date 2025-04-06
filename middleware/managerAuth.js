@@ -14,7 +14,7 @@ const verifyToken = async (req, res, next) => {
     const tokenWithoutBearer = token.slice(7).trim();
     
     const decoded = jwt.verify(tokenWithoutBearer, process.env.JWT_SECRET_KEY_MANAGER);
-    console.log('decoded : '+decoded);
+    // console.log('decoded : '+decoded);
     req.decodedUser = decoded;
     if (decoded.role === 'manager') {
          return next();

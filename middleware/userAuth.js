@@ -10,12 +10,12 @@ const verifyToken = async (req, res, next) => {
       if (!token.startsWith('Bearer')) {
         return res.status(401).json({ msg: 'Authentication failed: Invalid token format.' });
       }
-      console.log(token);
+      // console.log(token);
         
       const tokenWithoutBearer = token.slice(7).trim();
       
       const decoded = jwt.verify(tokenWithoutBearer, process.env.JWT_SECRET_KEY);
-      console.log('decoded : '+decoded);
+      // console.log('decoded : '+decoded);
       req.decodedUser = decoded;
       if (decoded.role === 'user') {
             return next();
