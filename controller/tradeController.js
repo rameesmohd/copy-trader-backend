@@ -53,7 +53,7 @@ const getTrades=async(req,res)=>{
         const tradeData = await managerTradeModel.find({
             manager: _id,
             is_distributed: distributed === 'true', // Convert query parameter to boolean
-        });
+        }).sort({createdAt:-1});
 
         res.status(200).json({result : tradeData})
     } catch (error) {
