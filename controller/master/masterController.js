@@ -10,7 +10,12 @@ const {fetchAndUseLatestRollover} = require('../rolloverController')
 
 const fetchUser =async(req,res)=>{
     try {
-        const result =  await userModel.find({},{password : 0})
+        const { search } = req.query
+        let query={}
+        if(search){
+            query.email = search
+        }   
+        const result =  await userModel.find(query,{password : 0})
         console.log(result);
         const latestRollover = await fetchAndUseLatestRollover()
         return res.status(200).json({result :result,rollover : latestRollover})
@@ -86,8 +91,63 @@ const masterLogin=(req,res)=>{
 
 const fetchDeposits=async(req,res)=>{
     try {
-        const deposits =  await depositModel.find({},{private_key : 0,payment_address:0}).populate({ path: "user", select: "email first_name last_name" });
-        res.status(200).json({result : deposits})
+        const {
+            from,
+            to,
+            search = '',
+            status,
+            currentPage = 1,
+            pageSize = 10,
+          } = req.query;
+      
+          const page = parseInt(currentPage);
+          const limit = parseInt(pageSize);
+          const skip = (page - 1) * limit;
+      
+          const query = {};
+      
+          // Date filter
+          if (from && to) {
+            query.createdAt = {
+              $gte: new Date(from),
+              $lte: new Date(to),
+            };
+          }
+      
+          // Status filter
+          if (status) {
+            query.status = status;
+          }
+      
+          // Search filter
+          const searchRegex = new RegExp(search, 'i');
+          let userIds = [];
+      
+          if (search) {
+            const matchedUsers = await userModel
+              .find({ email: searchRegex })
+              .select('_id');
+            userIds = matchedUsers.map((u) => u._id);
+      
+            query.$or = [
+              { user: { $in: userIds } },
+              { transaction_id: searchRegex },
+              { wallet_id: searchRegex },
+            ];
+          }
+      
+          // Total count for pagination
+          const total = await depositModel.countDocuments(query);
+      
+          // Paginated results
+          const deposits = await depositModel
+            .find(query, { private_key: 0, payment_address: 0 })
+            .populate({ path: 'user', select: 'email first_name last_name' })
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        res.status(200).json({result : deposits,total, currentPage: page})
     } catch (error) {
         console.error(error);
         res.status(500).json({ errMsg: 'Error fetching deposits, please try again', error: error.message });
@@ -96,8 +156,62 @@ const fetchDeposits=async(req,res)=>{
   
 const fetchWithdrawals=async(req,res)=>{
     try {
-        const withdrawals =  await withdrawModel.find({})
-        res.status(200).json({result : withdrawals})
+        const {
+            from,
+            to,
+            search = '',
+            status,
+            currentPage = 1,
+            pageSize = 10,
+          } = req.query;
+      
+          const page = parseInt(currentPage);
+          const limit = parseInt(pageSize);
+          const skip = (page - 1) * limit;
+      
+          const query = {};
+      
+          // Date filter
+          if (from && to) {
+            query.createdAt = {
+              $gte: new Date(from),
+              $lte: new Date(to),
+            };
+          }
+      
+          // Status filter
+          if (status) {
+            query.status = status;
+          }
+      
+          // Search filter
+          const searchRegex = new RegExp(search, 'i');
+          let userIds = [];
+      
+          if (search) {
+            const matchedUsers = await userModel
+              .find({ email: searchRegex })
+              .select('_id');
+            userIds = matchedUsers.map((u) => u._id);
+      
+            query.$or = [
+              { user: { $in: userIds } },
+              { transaction_id: searchRegex },
+              { wallet_id: searchRegex },
+            ];
+          }
+      
+        // Total count for pagination
+        const total = await withdrawModel.countDocuments(query);
+
+        const withdrawals =  await withdrawModel
+        .find(query)
+        .populate({ path: "user", select: "email first_name last_name" })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+
+        res.status(200).json({result : withdrawals,total, currentPage: page})
     } catch (error) {
         console.error(error);
         res.status(500).json({ errMsg: 'Error fetching deposits, please try again', error: error.message });
@@ -289,9 +403,36 @@ const changeHelpRequestStatus=async(req,res)=>{
     }
 }
 
+const changeUserEmail = async (req, res) => {
+    try {
+      const { newEmail, user_id } = req.body;
+  
+      if (!newEmail || !user_id) {
+        return res.status(400).json({ errMsg: "newEmail and user_id are required" });
+      }
+  
+      const updatedUser = await userModel.findByIdAndUpdate(
+        user_id,
+        { $set: { email: newEmail } },
+        { new: true, runValidators: true } 
+      );
+  
+      if (!updatedUser) {
+        return res.status(404).json({ errMsg: "User not found" });
+      }
+  
+      return res.status(200).json({ msg: "Email updated successfully"});
+    } catch (error) {
+      console.error("Error changing email:", error);
+      return res.status(500).json({ errMsg: "Error changing email", error });
+    }
+  };
+  
+
 
 module.exports = {
     fetchUser,
+    changeUserEmail,
     addManager,
     fetchManagers,
     updateManager,
