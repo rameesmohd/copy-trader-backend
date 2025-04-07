@@ -7,19 +7,28 @@ const jwt = require("jsonwebtoken");
 const userTransactionModel = require('../../models/userTransaction');
 const { default: mongoose } = require('mongoose');
 const {fetchAndUseLatestRollover} = require('../rolloverController')
+const { buildPaginatedQuery } = require('../../controller/common/buildPaginationQuery')
 
 const fetchUser =async(req,res)=>{
     try {
-        const { search } = req.query
-        let query={}
-        if(search){
-            query.email = search
-        }   
-        const result =  await userModel.find(query,{password : 0})
-        console.log(result);
+        const { query, skip, limit } = buildPaginatedQuery(req.query, ['email']);
+    
+        // Total count for pagination
+        const total = await userModel.countDocuments(query);
+        
+        const result =  await userModel
+        .find(query,{password : 0})
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+
         const latestRollover = await fetchAndUseLatestRollover()
-        return res.status(200).json({result :result,rollover : latestRollover})
+        return res.status(200).json({
+            result :result,
+            rollover : latestRollover,total
+        })
     } catch (error) {
+        console.log(error);
         res.status(500).json({ errMsg: 'Error fetching users' });
     }
 }
@@ -91,115 +100,71 @@ const masterLogin=(req,res)=>{
 
 const fetchDeposits=async(req,res)=>{
     try {
-        const {
-            from,
-            to,
-            search = '',
-            status,
-            currentPage = 1,
-            pageSize = 10,
-          } = req.query;
-      
-          const page = parseInt(currentPage);
-          const limit = parseInt(pageSize);
-          const skip = (page - 1) * limit;
-      
-          const query = {};
-      
-          // Date filter
-          if (from && to) {
-            query.createdAt = {
-              $gte: new Date(from),
-              $lte: new Date(to),
-            };
-          }
-      
-          // Status filter
-          if (status) {
-            query.status = status;
-          }
-      
-          // Search filter
-          const searchRegex = new RegExp(search, 'i');
-          let userIds = [];
-      
-          if (search) {
+        let userIds = [];   
+        if (req.query.search) {
+            const searchRegex = new RegExp(req.query.search, 'i');
             const matchedUsers = await userModel
-              .find({ email: searchRegex })
-              .select('_id');
+                .find({ email: searchRegex })
+                .select('_id');
             userIds = matchedUsers.map((u) => u._id);
-      
-            query.$or = [
-              { user: { $in: userIds } },
-              { transaction_id: searchRegex },
-              { wallet_id: searchRegex },
-            ];
-          }
-      
-          // Total count for pagination
-          const total = await depositModel.countDocuments(query);
-      
-          // Paginated results
-          const deposits = await depositModel
+        }    
+
+        const { query, skip, limit, page } = buildPaginatedQuery(
+            req.query,
+            ['email', 'transaction_id', 'wallet_id'],
+            { userIds }
+        );
+          
+        // Total count for pagination
+        const total = await depositModel.countDocuments(query);
+    
+        // Paginated results
+        const deposits = await depositModel
             .find(query, { private_key: 0, payment_address: 0 })
             .populate({ path: 'user', select: 'email first_name last_name' })
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit);
 
-        res.status(200).json({result : deposits,total, currentPage: page})
+        const totalAmountAgg = await depositModel.aggregate([
+            { $match: query },
+            {
+                $group: {
+                _id: null,
+                totalDepositedAmount: { $sum: { $toDouble: "$amount" } }
+                }
+            }
+        ]);
+            
+        const totalDepositedAmount = totalAmountAgg[0]?.totalDepositedAmount || 0;
+
+        return res.status(200).json({
+            result : deposits,total, 
+            currentPage: page,
+            totalDepositedAmount
+        })
     } catch (error) {
         console.error(error);
-        res.status(500).json({ errMsg: 'Error fetching deposits, please try again', error: error.message });
+        return res.status(500).json({ errMsg: 'Error fetching deposits, please try again', error: error.message });
     }
 }
   
 const fetchWithdrawals=async(req,res)=>{
     try {
-        const {
-            from,
-            to,
-            search = '',
-            status,
-            currentPage = 1,
-            pageSize = 10,
-          } = req.query;
-      
-          const page = parseInt(currentPage);
-          const limit = parseInt(pageSize);
-          const skip = (page - 1) * limit;
-      
-          const query = {};
-      
-          // Date filter
-          if (from && to) {
-            query.createdAt = {
-              $gte: new Date(from),
-              $lte: new Date(to),
-            };
-          }
-      
-          // Status filter
-          if (status) {
-            query.status = status;
-          }
-      
-          // Search filter
-          const searchRegex = new RegExp(search, 'i');
-          let userIds = [];
-      
-          if (search) {
+        let userIds = [];   
+        if (req.query.search) {
+            const searchRegex = new RegExp(req.query.search, 'i');
             const matchedUsers = await userModel
-              .find({ email: searchRegex })
-              .select('_id');
+                .find({ email: searchRegex })
+                .select('_id');
             userIds = matchedUsers.map((u) => u._id);
-      
-            query.$or = [
-              { user: { $in: userIds } },
-              { transaction_id: searchRegex },
-              { wallet_id: searchRegex },
-            ];
-          }
+        }    
+
+        const { query, skip, limit, page } = buildPaginatedQuery(
+            req.query,
+            ['email', 'transaction_id', 'wallet_id'],
+            { userIds }
+        );
       
         // Total count for pagination
         const total = await withdrawModel.countDocuments(query);
@@ -211,7 +176,23 @@ const fetchWithdrawals=async(req,res)=>{
         .skip(skip)
         .limit(limit);
 
-        res.status(200).json({result : withdrawals,total, currentPage: page})
+        const totalAmountAgg = await withdrawModel.aggregate([
+            { $match: query },
+            {
+                $group: {
+                _id: null,
+                totalWithdrawedAmount: { $sum: { $toDouble: "$amount" } }
+                }
+            }
+        ]);
+            
+        const totalWithdrawedAmount = totalAmountAgg[0]?.totalWithdrawedAmount || 0;
+
+        res.status(200).json({
+            result : withdrawals,total, 
+            currentPage: page,
+            totalWithdrawedAmount
+        })
     } catch (error) {
         console.error(error);
         res.status(500).json({ errMsg: 'Error fetching deposits, please try again', error: error.message });
@@ -228,7 +209,9 @@ const getPendingKYCRequests = async (req, res) => {
           { residential_proof_status: "verified" },
           { identify_proof_status: "verified" },
         ]
-      }).select("first_name user_id country is_email_verified last_name email is_email_verified is_kyc_verified identify_proof_status residential_proof_status identify_proof residential_proof createdAt");
+      }).select(
+        "first_name user_id country is_email_verified last_name email is_email_verified is_kyc_verified identify_proof_status residential_proof_status identify_proof residential_proof createdAt"
+      ).sort({createdAt : -1})
       res.status(200).json({ success: true, result: pendingUsers });
     } catch (error) {
       res.status(500).json({ success: false, message: "Error fetching KYC requests", error });
@@ -384,7 +367,12 @@ const addToWallet = async (req, res) => {
 
 const fetchHelpRequests=async(req,res)=>{
     try {
-        const tickets = (await ticketModel.find({}).populate("user_id","email user_id")).reverse()
+        const {status} = req.query
+        const query = {}
+        if(status){
+            query.status = status
+        }
+        const tickets = (await ticketModel.find(query).populate("user_id","email user_id")).reverse()
         return res.status(200).json({result : tickets})
     } catch (error) {
         console.error("Error fetching help requests : ", error);
