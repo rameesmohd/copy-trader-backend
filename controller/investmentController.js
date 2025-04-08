@@ -387,7 +387,7 @@ const getDepositsInLast30TradingDays=(investment)=> {
       0
     );
 
-    console.log(`Total deposits in the last 30 trading days: $${totalRecentDeposits}`);
+    console.log(`Total deposits in the last trading liquidity periods: $${totalRecentDeposits}`);
     return { totalRecentDeposits, recentDeposits };
   } catch (error) {
     console.error('Error fetching deposits:', error.message);
@@ -417,20 +417,20 @@ const handleInvestmentWithdrawal = async (req, res) => {
     // console.log('availableEquityForWithdraw:', availableEquityForWithdraw, 'Requested:', withdrawalAmount);
     const user = await userModel.findById(investment.user);
     
-    //------------------------------test-------------------------
+    //------------------------------Temporary All Reject,comment to disable-------------------------
     withdrawTransaction = new investmentTransactionModel({
       user: investment.user,
       investment: investment._id,
       manager: investment.manager,
       type: 'withdrawal',
-      status: 'rejected',
+      status: 'pending',
       from : `INV${investment.inv_id}`,
       to : `WALL${user.my_wallets.main_wallet_id}`,
       amount: withdrawalAmount,
-      comment: `Liquidity Period is active`
+      // comment: `Liquidity Period is active`
     });
     await withdrawTransaction.save();
-    return res.status(200).json({ errMsg: 'Liquidity Period is active' });
+    return res.status(200).json({ msg: 'Withdrawal submitted successfully.' });
     // ------------------------------------test------------------------------------
 
     if (withdrawalAmount <= availableEquityForWithdraw) {
@@ -545,6 +545,12 @@ const approveWithdrawalTransaction = async (withdrawTransactionId,rollover_id) =
       console.log('User not found.');
       return false
     }
+    //------------------Temporary All Reject,comment to disable------------------------------------------------>>
+      withdrawTransaction.status = 'rejected'
+      withdrawTransaction.comment = `Liquidity Period is active`
+      await withdrawTransaction.save()
+      return false
+    //-------------------------------------------------------------------------------->>
 
     // Calculate amounts using Number() to ensure proper numeric operations
     const performanceFee = Number(deduction);
