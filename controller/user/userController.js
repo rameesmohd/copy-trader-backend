@@ -545,6 +545,43 @@ const callbackRequestSubmit = async (req, res) => {
     }
 };
 
+const registerProvider = async (req, res) => {
+    try {
+      const formData = req.body;
+      
+      console.log(formData);
+      
+      if(!formData){
+        return res.status(400).json({ success: false, error: error.message });
+      }  
+      // Send email
+      await resend.emails.send({
+        from: process.env.WEBSITE_MAIL,
+        to: 'rameesmohd789@gmail.com', // Where you want to receive form submissions
+        subject: 'New Strategy Provider Registration',
+        html: `
+          <h2>New Registration</h2>
+          <ul>
+            <li><strong>Name:</strong> ${formData.firstName} ${formData.lastName}</li>
+            <li><strong>Email:</strong> ${formData.email}</li>
+            <li><strong>Phone:</strong> ${formData.countryCode}${formData.mobile}</li>
+            <li><strong>Country:</strong> ${formData.country}</li>
+            <li><strong>DOB:</strong> ${formData.dateOfBirth}</li>
+            <li><strong>Account Type:</strong> ${formData.accountType}</li>
+            <li><strong>Platform:</strong> ${formData.platform}</li>
+            <li><strong>Leverage:</strong> ${formData.leverage}</li>
+            <li><strong>Referral:</strong> ${formData.referral || 'None'}</li>
+          </ul>
+        `
+      });
+  
+      return res.status(200).json({ success: true, message: 'Registered and email sent' });
+    } catch (error) {
+      console.error('Error sending email:', error);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  };
+
 
 module.exports = {
     fetchUser,
@@ -561,5 +598,6 @@ module.exports = {
     forgetPassGenerateOTP,
     validateForgetOTP,
     resetPassword,
-    callbackRequestSubmit
+    callbackRequestSubmit,
+    registerProvider
 }
