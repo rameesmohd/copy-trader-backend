@@ -15,7 +15,8 @@ const {
         addToWallet,
         fetchHelpRequests,
         changeHelpRequestStatus,
-        changeUserEmail
+        changeUserEmail,
+        sendEmail
     } =require('../controller/master/masterController')
 const { fetchAddressBalance } = require('../controller/paymentController')
 const {verifyToken} = require('../middleware/masterAuth')
@@ -50,7 +51,7 @@ router.route('/kyc-requests')
     .post(approveKyc)
 
 router.post('/add-to-wallet',addToWallet)
-
+router.post('/send-email',sendEmail)
 router.post('/change-email',changeUserEmail)
 
 module.exports= router

@@ -548,9 +548,7 @@ const callbackRequestSubmit = async (req, res) => {
 const registerProvider = async (req, res) => {
     try {
       const formData = req.body;
-      
-      console.log(formData);
-      
+            
       if(!formData){
         return res.status(400).json({ success: false, error: error.message });
       }  

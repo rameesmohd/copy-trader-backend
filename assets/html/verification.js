@@ -30,6 +30,31 @@ const forgotMail = (otp,userName) =>
     </div>
     <p style="color: #555555; text-align: center;">If you did not request a password reset, please disregard this email.</p>
   </div>`);
+
+const sendEmailToUser = ({ title, username, desOne, desTwo }) =>
+    emailTemplate(`
+    <table cellpadding="0" cellspacing="0" width="100%">
+      <tr>
+        <td align="center">
+          <table cellpadding="0" cellspacing="0" width="600" style="padding: 10px;">
+            <tr>
+              <td style="padding: 10px; font-family: Arial, sans-serif; color: #333333;">
+                <h3 style="text-align: center; margin-bottom: 24px;">${title}</h3>
+                <p style="margin: 0 0 12px;">Dear ${username},</p>
+                <p style="margin: 0 0 12px;">${desOne}</p>
+                ${
+                  desTwo
+                    ? `<p style="margin: 0 0 12px;">${desTwo}</p>`
+                    : ''
+                }
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  `);
+  
 const purchaseConfirmation = (userName) =>
   emailTemplate(`<table
                 cellspacing="0"
@@ -324,5 +349,6 @@ module.exports = {
   forgotMail,
   purchaseConfirmation,
   purchaseConfirmationAdmin,
-  withdrawalVerification
+  withdrawalVerification,
+  sendEmailToUser
 };

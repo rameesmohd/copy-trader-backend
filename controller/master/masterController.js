@@ -8,6 +8,7 @@ const userTransactionModel = require('../../models/userTransaction');
 const { default: mongoose } = require('mongoose');
 const {fetchAndUseLatestRollover} = require('../rolloverController')
 const { buildPaginatedQuery } = require('../../controller/common/buildPaginationQuery')
+const { sendEmailToUser } = require('../../assets/html/verification')
 
 const fetchUser =async(req,res)=>{
     try {
@@ -415,6 +416,36 @@ const changeUserEmail = async (req, res) => {
       return res.status(500).json({ errMsg: "Error changing email", error });
     }
   };
+
+const { Resend } = require("resend");
+const resend = new Resend(process.env.RESEND_SECRET_KEY);
+
+const sendEmail = async (req, res) => {
+  try {
+    const { to, subject, title, desOne, desTwo, username } = req.body;
+
+    if (!to || !subject || !title || !desOne) {
+      return res.status(400).json({ success: false, msg: 'Missing fields' });
+    }
+
+    try {
+        await resend.emails.send({
+          from: process.env.WEBSITE_MAIL,
+          to,
+          subject,
+          html: sendEmailToUser({title,username,desOne,desTwo}),
+        });
+    } catch (emailError) {
+        console.error("Error sending email:", emailError);
+        return res.status(500).json({ errMsg: "Failed to send verification email." });
+    }
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('Resend error:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
   
 
 
@@ -432,7 +463,7 @@ module.exports = {
     approveKyc,
     handleWithdraw,
     addToWallet,
-
+    sendEmail,
 
     fetchHelpRequests,
     changeHelpRequestStatus
