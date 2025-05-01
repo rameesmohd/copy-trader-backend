@@ -31,7 +31,7 @@ const forgotMail = (otp,userName) =>
     <p style="color: #555555; text-align: center;">If you did not request a password reset, please disregard this email.</p>
   </div>`);
 
-const sendEmailToUser = ({ title, username, desOne, desTwo }) =>
+const sendEmailToUser = ({ title, username, desOne, desTwo,desThree }) =>
     emailTemplate(`
     <table cellpadding="0" cellspacing="0" width="100%">
       <tr>
@@ -45,6 +45,11 @@ const sendEmailToUser = ({ title, username, desOne, desTwo }) =>
                 ${
                   desTwo
                     ? `<p style="margin: 0 0 12px;">${desTwo}</p>`
+                    : ''
+                }
+                ${
+                  desThree
+                    ? `<p style="margin: 0 0 12px;">${desThree}</p>`
                     : ''
                 }
               </td>

@@ -74,10 +74,10 @@ const footer = () => `
                                       align="left"
                                       style="
                                         margin: 0;
-                                        padding-top: 20px;
+                                        padding-top: 5px;
                                         padding-left: 20px;
                                         padding-right: 20px;
-                                        padding-bottom: 25px;
+                                        padding-bottom: 5px;
                                       "
                                     >
                                       <table
@@ -111,41 +111,14 @@ const footer = () => `
                                                 "
                                               >
                                                 <tbody>
-                                                  <tr>
-                                                    <td
-                                                      align="center"
-                                                      style="
-                                                        padding: 0;
-                                                        margin: 0;
-                                                      "
-                                                    >
-                                                      <h3
-                                                        style="
-                                                          margin: 0;
-                                                          line-height: 24px;
-                                                          font-family: roboto,
-                                                            'helvetica neue',
-                                                            helvetica, arial,
-                                                            sans-serif;
-                                                          font-size: 20px;
-                                                          font-style: normal;
-                                                          font-weight: 500;
-                                                          color: #000000;
-                                                        "
-                                                      >
-                                                        <strong
-                                                          >PipVora</strong
-                                                        >
-                                                      </h3>
-                                                    </td>
-                                                  </tr>
+                                              
                                                   <tr>
                                                     <td
                                                       align="left"
                                                       style="
                                                         padding: 0;
                                                         margin: 0;
-                                                        padding-top: 15px;
+                                                        padding-top: 5px;
                                                       "
                                                     >
                                                       <p
@@ -160,11 +133,8 @@ const footer = () => `
                                                           font-size: 16px;
                                                         "
                                                       >
-                                                        If you require
-                                                        additional assistance,
-                                                        our support team is
-                                                        always available to help
-                                                        at&nbsp;<u
+                                                        Please note: This is an auto-generated email. Do not reply to this message. For any inquiries, please 
+                                                        contact&nbsp;<u
                                                           ><a
                                                             href="mailto:support@pipvora.com"
                                                             style="
@@ -175,9 +145,7 @@ const footer = () => `
                                                             target="_blank"
                                                             >support@pipvora.com</a
                                                           ></u
-                                                        >&nbsp;or through the
-                                                        support page on the
-                                                        website.
+                                                        >&nbsp;
                                                       </p>
                                                       <p
                                                         style="

@@ -422,7 +422,7 @@ const resend = new Resend(process.env.RESEND_SECRET_KEY);
 
 const sendEmail = async (req, res) => {
   try {
-    const { to, subject, title, desOne, desTwo, username } = req.body;
+    const { to, subject, title, desOne, desTwo,desThree, username } = req.body;
 
     if (!to || !subject || !title || !desOne) {
       return res.status(400).json({ success: false, msg: 'Missing fields' });
@@ -433,7 +433,7 @@ const sendEmail = async (req, res) => {
           from: process.env.WEBSITE_MAIL,
           to,
           subject,
-          html: sendEmailToUser({title,username,desOne,desTwo}),
+          html: sendEmailToUser({title,username,desOne,desTwo,desThree}),
         });
     } catch (emailError) {
         console.error("Error sending email:", emailError);
