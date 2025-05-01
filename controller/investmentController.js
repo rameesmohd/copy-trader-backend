@@ -547,7 +547,7 @@ const approveWithdrawalTransaction = async (withdrawTransactionId,rollover_id) =
     }
     //------------------Temporary All Reject,comment to disable------------------------------------------------>>
       withdrawTransaction.status = 'rejected'
-      withdrawTransaction.comment = `Liquidity Period is active`
+      withdrawTransaction.comment = `Unsettled provider credit.`
       await withdrawTransaction.save()
       return false
     //-------------------------------------------------------------------------------->>
